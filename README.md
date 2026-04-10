@@ -1,10 +1,14 @@
 # Smart Grocery App
 
-Backend API for the Smart Grocery application.  
+Smart Grocery Application for Senior Design Project
 
 ---
 
-# Tech Stack
+## Backend API for the Smart Grocery application
+
+---
+
+## Tech Stack
 
 - Node.js
 - Express.js
@@ -17,36 +21,23 @@ Backend API for the Smart Grocery application.
 
 ---
 
-# Prerequisites
+## Prerequisites
 
 Before running the project, make sure you have:
 
 - Node.js
 - npm
 - MongoDB (local installation or MongoDB Atlas)
-- API testing tool (Postman recommended) for testing endpoints
+- API testing tool (Postman recommended)
 
 ---
 
-# Installation
+## Installation
 
-## 1. Clone repository
-## 2. Create `.env` file in root directory
+### 1. Clone repository
+
+### 2. Create `.env` file in root directory
 
 ```env
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
-```
-
-## 3. Run the server
-
-```bash
-npm install
-npm run dev
-```
-
-## Server will run on
-
-```
-http://localhost:3000
-```
