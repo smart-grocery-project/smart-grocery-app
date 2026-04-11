@@ -4,12 +4,17 @@ Smart Grocery Application for Senior Design Project
 
 ---
 
-## Backend API for the Smart Grocery application
+# Project Overview
+
+This project includes:
+- Backend API (Node.js + Express + MongoDB)
+- Mobile Frontend App (Expo + React Native)
 
 ---
 
-## Tech Stack
+# Tech Stack
 
+## Backend
 - Node.js
 - Express.js
 - MongoDB + Mongoose
@@ -19,24 +24,55 @@ Smart Grocery Application for Senior Design Project
 - Quagga2 (barcode scanning)
 - External API: Open Food Facts
 
+## Mobile App
+- Expo
+- React Native
+- JavaScript
+- React Navigation
+
 ---
 
-## Prerequisites
+# Features
 
-Before running the project, make sure you have:
+## Backend
+- User authentication (JWT)
+- Grocery product management
+- Barcode scanning support
+- File uploads
+- External food database integration
+
+## Mobile App
+- Login / Register screens
+- Home screen
+- Navigation system
+- API integration with backend
+
+---
+
+# Project Structure
+
+## Mobile App folders
+- `src/navigation` → app navigation
+- `src/screens` → UI screens
+- `src/theme` → styling/colors
+- `src/utils` → validation logic
+
+---
+
+# Prerequisites
 
 - Node.js
 - npm
-- MongoDB (local installation or MongoDB Atlas)
-- API testing tool (Postman recommended)
+- MongoDB (local or Atlas)
+- Expo Go app (for mobile testing)
 
 ---
 
-## Installation
+# Installation
 
-### 1. Clone repository
-
-### 2. Create `.env` file in root directory
+## Backend setup
+1. Clone repository
+2. Create `.env` file:
 
 ```env
 MONGO_URI=your_mongodb_connection_string
