@@ -24,6 +24,8 @@ export const createUser = async (req, res) => {
       email,
       password: hashedPassword,
     });
+
+    // Return safe response
     const { password: _, ...userWithoutPassword } = user._doc;
     res.status(201).json(userWithoutPassword);
   } catch (error) {
