@@ -51,8 +51,7 @@ export const getHistory = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const history = await History.findOne({ user: userId })
-      .populate("items.product");
+    const history = await History.findOne({ user: userId }).populate("items.product");
 
     if (!history) {
       return res.status(404).json({ message: "History not found" });

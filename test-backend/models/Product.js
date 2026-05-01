@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
+    barcode: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     name: {
       type: String,
       required: true,
@@ -10,12 +15,25 @@ const productSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
+      default: 0,
     },
     nutrition: {
-      calories: Number,
-      protein: Number,
-      carbs: Number,
-      fat: Number,
+      calories: {
+        type: Number,
+        default: 0,
+      },
+      protein: {
+        type: Number,
+        default: 0,
+      },
+      carbs: {
+        type: Number,
+        default: 0,
+      },
+      fat: {
+        type: Number,
+        default: 0,
+      },
     },
   },
   { timestamps: true }

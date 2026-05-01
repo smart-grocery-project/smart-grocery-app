@@ -14,7 +14,7 @@ const inventoryItemSchema = new mongoose.Schema({
   expirationDate: {
     type: Date,
     required: true,
-    default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   },
 });
 
