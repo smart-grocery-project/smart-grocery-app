@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 
 const quickActions = [
-  { title: 'Scan Product', subtitle: 'Scan barcode details quickly' },
-  { title: 'Inventory', subtitle: 'See what you already have' },
+  { title: 'Scan Product', subtitle: 'Scan barcode details quickly', screen: 'ScanProduct' },
+  { title: 'Inventory', subtitle: 'See what you already have', screen: 'Inventory' },
   { title: 'Budget & Goals', subtitle: 'Track spending limits and targets' },
-  { title: 'History', subtitle: 'Review recent grocery activity' },
+  { title: 'History', subtitle: 'Review recent grocery activity', screen: 'History' },
 ];
 
 export default function HomeScreen({ navigation, route }) {
@@ -44,7 +44,9 @@ export default function HomeScreen({ navigation, route }) {
           <Pressable
             key={action.title}
             style={styles.actionCard}
-            onPress={() => console.log(`${action.title} pressed`)}
+            onPress={() =>
+              action.screen ? navigation.navigate(action.screen) : console.log(`${action.title} pressed`)
+            }
           >
             <View>
               <Text style={styles.actionTitle}>{action.title}</Text>
