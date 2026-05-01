@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Smart Grocery",
+    "slug": "smart-grocery-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#f4fbf4"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.smartgrocery.mobile"
+    }
+  }
+}
