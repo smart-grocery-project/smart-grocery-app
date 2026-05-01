@@ -1,30 +1,79 @@
-# Smart Grocery Mobile App
+# Smart Grocery App
 
-This folder contains the real mobile frontend for the Smart Grocery senior project.
+Smart Grocery Application for Senior Design Project
 
-## Tech stack
+---
 
+# Project Overview
+
+This project includes:
+- Backend API (Node.js + Express + MongoDB)
+- Mobile Frontend App (Expo + React Native)
+
+---
+
+# Tech Stack
+
+## Backend
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- JWT Authentication
+- bcrypt (password hashing)
+- multer (file uploads)
+- Quagga2 (barcode scanning)
+- External API: Open Food Facts
+
+## Mobile App
 - Expo
 - React Native
 - JavaScript
 - React Navigation
 
-## Screens
+---
 
-- Login
-- Register
-- Home
+# Features
 
-## Main folders
+## Backend
+- User authentication (JWT)
+- Grocery product management
+- Barcode scanning support
+- File uploads
+- External food database integration
 
-- `src/navigation` for the app navigator
-- `src/screens` for each screen
-- `src/theme` for shared colors
-- `src/utils` for validation logic
+## Mobile App
+- Login / Register screens
+- Home screen
+- Navigation system
+- API integration with backend
 
-## Run the app
+---
 
-1. Open a terminal in this folder.
-2. Run `npm install`.
-3. Run `npx expo start`.
-4. Scan the QR code with Expo Go on Android, or press `a` in the terminal to open an Android emulator.
+# Project Structure
+
+## Mobile App folders
+- `src/navigation` → app navigation
+- `src/screens` → UI screens
+- `src/theme` → styling/colors
+- `src/utils` → validation logic
+
+---
+
+# Prerequisites
+
+- Node.js
+- npm
+- MongoDB (local or Atlas)
+- Expo Go app (for mobile testing)
+
+---
+
+# Installation
+
+## Backend setup
+1. Clone repository
+2. Create `.env` file:
+
+```env
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
