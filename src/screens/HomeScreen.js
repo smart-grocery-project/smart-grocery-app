@@ -1,64 +1,172 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
-const quickActions = [
-  { title: 'Scan Product', subtitle: 'Scan barcode details quickly', screen: 'ScanProduct' },
-  { title: 'Inventory', subtitle: 'See what you already have', screen: 'Inventory' },
-  { title: 'Budget & Goals', subtitle: 'Track spending limits and targets' },
-  { title: 'History', subtitle: 'Review recent grocery activity', screen: 'History' },
+// Static budget data — will come from backend later
+const budgetData = {
+  remaining: 42.50,
+  total: 80,
+};
+
+// Static nutrition goal data — will come from backend / settings later
+const nutritionGoals = [
+  { label: 'Protein', value: '68g', color: '#4a9eff' },
+  { label: 'Carbs',   value: '142g', color: '#f5a623' },
+  { label: 'Fats',    value: '38g',  color: '#ff6b6b' },
 ];
 
-export default function HomeScreen({ navigation, route }) {
-  const userName = route.params?.userName || 'Smart Shopper';
+// Quick action tiles
+const quickActions = [
+  {
+    title: 'Scan product',
+    subtitle: 'Add to list',
+    icon: 'scan-outline',
+    screen: 'ScanTab',
+  },
+  {
+    title: 'Inventory',
+    subtitle: 'View all items',
+    icon: 'cube-outline',
+    screen: 'InventoryTab',
+  },
+  {
+    title: 'Expiry dates',
+    subtitle: '3 expiring soon',
+    icon: 'time-outline',
+    screen: 'InventoryTab',
+    params: { screen: 'ExpiryDates' },
+  },
+  {
+    title: 'Settings',
+    subtitle: 'Budget & nutrition',
+    icon: 'settings-outline',
+    screen: 'ProfileTab',
+  },
+];
+
+// Static expiring soon items — will come from inventory data later
+const expiringSoon = [
+  {
+    id: '1',
+    name: 'Chicken breast',
+    meta: '500g · Protein · Mar 20',
+    label: 'Today',
+    urgent: true,
+  },
+  {
+    id: '2',
+    name: 'Greek yogurt',
+    meta: '200g · Dairy · Mar 19',
+    label: '2 days',
+    urgent: false,
+  },
+];
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 18) return 'Good afternoon';
+  if (hour >= 18 && hour < 22) return 'Good evening';
+  return 'Good night';
+}
+
+export default function HomeScreen({ navigation }) {
+  // userName will come from global auth context once backend is connected
+  const userName = 'Smart Shopper';
+  const budgetPercent = budgetData.remaining / budgetData.total;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerCard}>
-          <Text style={styles.greeting}>Welcome, {userName}</Text>
-          <Text style={styles.headerTitle}>Smart Grocery</Text>
-          <Text style={styles.headerSubtitle}>
-            Keep your shopping list, nutrition, and budget in one place.
-          </Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Greeting */}
+        <View style={styles.greetingSection}>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.userName}>{userName}</Text>
         </View>
 
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, styles.budgetCard]}>
-            <Text style={styles.summaryLabel}>Budget Summary</Text>
-            <Text style={styles.summaryValue}>$128 left</Text>
-            <Text style={styles.summaryNote}>Weekly grocery goal: $200</Text>
+        {/* Budget card */}
+        <View style={styles.budgetCard}>
+          <Text style={styles.budgetLabel}>Weekly budget remaining</Text>
+          <View style={styles.budgetAmountRow}>
+            <Text style={styles.budgetAmount}>
+              ${budgetData.remaining.toFixed(2)}
+            </Text>
+            <Text style={styles.budgetDivider}> / </Text>
+            <Text style={styles.budgetTotal}>${budgetData.total}</Text>
           </View>
-
-          <View style={[styles.summaryCard, styles.nutritionCard]}>
-            <Text style={styles.summaryLabel}>Nutrition Summary</Text>
-            <Text style={styles.summaryValue}>82%</Text>
-            <Text style={styles.summaryNote}>Healthy choices this week</Text>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.round(budgetPercent * 100)}%` },
+              ]}
+            />
           </View>
         </View>
 
-        <Text style={styles.sectionHeading}>Quick Actions</Text>
+        {/* Nutrition goals */}
+        <Text style={styles.sectionLabel}>NUTRITION GOALS</Text>
+        <View style={styles.nutritionRow}>
+          {nutritionGoals.map((item) => (
+            <View key={item.label} style={styles.nutritionChip}>
+              <Text style={[styles.nutritionValue, { color: item.color }]}>
+                {item.value}
+              </Text>
+              <Text style={styles.nutritionLabel}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
 
-        {quickActions.map((action) => (
-          <Pressable
-            key={action.title}
-            style={styles.actionCard}
-            onPress={() =>
-              action.screen ? navigation.navigate(action.screen) : console.log(`${action.title} pressed`)
-            }
-          >
-            <View>
+        {/* Quick actions */}
+        <Text style={styles.sectionLabel}>QUICK ACTIONS</Text>
+        <View style={styles.actionsGrid}>
+          {quickActions.map((action) => (
+            <Pressable
+              key={action.title}
+              style={styles.actionCard}
+              onPress={() => navigation.navigate(action.screen, action.params)}
+            >
+              <View style={styles.actionIconBox}>
+                <Ionicons name={action.icon} size={20} color={colors.primary} />
+              </View>
               <Text style={styles.actionTitle}>{action.title}</Text>
               <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Expiring soon */}
+        <Text style={styles.sectionLabel}>EXPIRING SOON</Text>
+        {expiringSoon.map((item) => (
+          <View key={item.id} style={styles.expiryCard}>
+            <View style={styles.expiryInfo}>
+              <Text style={styles.expiryName}>{item.name}</Text>
+              <Text style={styles.expiryMeta}>{item.meta}</Text>
             </View>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </Pressable>
+            <View
+              style={[
+                styles.expiryBadge,
+                item.urgent ? styles.badgeUrgent : styles.badgeWarning,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.expiryBadgeText,
+                  item.urgent ? styles.badgeTextUrgent : styles.badgeTextWarning,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
+          </View>
         ))}
 
-        <Pressable style={styles.logoutButton} onPress={() => navigation.replace('Login')}>
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </Pressable>
+        {/* Sign out moved to Profile tab */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -71,109 +179,187 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingTop: 20,
     paddingBottom: 40,
   },
-  headerCard: {
-    backgroundColor: colors.primary,
-    borderRadius: 28,
-    padding: 24,
-    marginBottom: 18,
+
+  // Greeting
+  greetingSection: {
+    marginBottom: 20,
   },
   greeting: {
-    color: colors.badge,
+    color: colors.textSecondary,
     fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontWeight: '500',
+    marginBottom: 2,
   },
-  headerTitle: {
-    color: colors.surface,
-    fontSize: 30,
+  userName: {
+    color: colors.textPrimary,
+    fontSize: 26,
     fontWeight: '800',
-    marginBottom: 8,
   },
-  headerSubtitle: {
-    color: colors.surface,
-    fontSize: 15,
-    lineHeight: 22,
-    opacity: 0.92,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 12,
+
+  // Budget card
+  budgetCard: {
+    backgroundColor: colors.primary,
+    borderRadius: 22,
+    padding: 20,
     marginBottom: 24,
   },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 22,
-    padding: 18,
-  },
-  budgetCard: {
-    backgroundColor: '#e8f7e8',
-  },
-  nutritionCard: {
-    backgroundColor: '#f1f8d8',
-  },
-  summaryLabel: {
+  budgetLabel: {
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 13,
-    color: colors.textSecondary,
     fontWeight: '600',
     marginBottom: 8,
   },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: 6,
-  },
-  summaryNote: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  sectionHeading: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.textPrimary,
+  budgetAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     marginBottom: 14,
   },
-  actionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 22,
-    padding: 18,
+  budgetAmount: {
+    color: colors.textOnPrimary,
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  budgetDivider: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  budgetTotal: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.textOnPrimary,
+    borderRadius: 999,
+  },
+
+  // Section label
+  sectionLabel: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
     marginBottom: 12,
+  },
+
+  // Nutrition
+  nutritionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 24,
+  },
+  nutritionChip: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  nutritionValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  nutritionLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Quick actions grid
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  actionCard: {
+    width: '47.5%',
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  actionIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  actionTitle: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  actionSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+
+  // Expiring soon
+  expiryCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
   },
-  actionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+  expiryInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  expiryName: {
     color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  actionSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  actionArrow: {
-    fontSize: 28,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  logoutButton: {
-    marginTop: 12,
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  logoutText: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.primary,
+    marginBottom: 3,
   },
+  expiryMeta: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+  expiryBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  badgeUrgent: {
+    backgroundColor: 'rgba(255, 80, 80, 0.15)',
+  },
+  badgeWarning: {
+    backgroundColor: 'rgba(245, 166, 35, 0.15)',
+  },
+  expiryBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  badgeTextUrgent: {
+    color: '#ff5050',
+  },
+  badgeTextWarning: {
+    color: '#f5a623',
+  },
+
 });

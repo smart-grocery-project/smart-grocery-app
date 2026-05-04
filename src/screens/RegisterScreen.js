@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { validateRegister } from '../utils/validation';
 
@@ -25,44 +27,40 @@ export default function RegisterScreen({ navigation }) {
   const [errors, setErrors] = useState({});
 
   const updateField = (field, value) => {
-    setForm((currentForm) => ({
-      ...currentForm,
-      [field]: value,
-    }));
-
-    setErrors((currentErrors) => ({
-      ...currentErrors,
-      [field]: '',
-    }));
+    setForm((curr) => ({ ...curr, [field]: value }));
+    setErrors((curr) => ({ ...curr, [field]: '' }));
   };
 
   const handleRegister = () => {
     const nextErrors = validateRegister(form);
     setErrors(nextErrors);
-
-    if (Object.values(nextErrors).some(Boolean)) {
-      return;
-    }
-
-    console.log('Register form submitted:', form);
-    navigation.replace('Home', { userName: form.fullName });
+    if (Object.values(nextErrors).some(Boolean)) return;
+    navigation.replace('MainTabs');
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="light" />
       <KeyboardAvoidingView
-        style={styles.keyboardArea}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.heroCard}>
-            <Text style={styles.heroTitle}>Create your account</Text>
-            <Text style={styles.heroText}>
-              Set up Smart Grocery and start organizing budget, nutrition, and shopping tasks.
-            </Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Logo section */}
+          <View style={styles.logoSection}>
+            <View style={styles.iconBox}>
+              <Ionicons name="cart" size={34} color={colors.textOnPrimary} />
+            </View>
+            <Text style={styles.appName}>Smart Grocery</Text>
+            <Text style={styles.appSubtitle}>Create your free account</Text>
           </View>
 
-          <View style={styles.formCard}>
+          {/* Form section */}
+          <View style={styles.formSection}>
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Full name</Text>
               <TextInput
@@ -70,13 +68,13 @@ export default function RegisterScreen({ navigation }) {
                 placeholder="John Doe"
                 placeholderTextColor={colors.placeholder}
                 value={form.fullName}
-                onChangeText={(value) => updateField('fullName', value)}
+                onChangeText={(v) => updateField('fullName', v)}
               />
               {errors.fullName ? <Text style={styles.errorText}>{errors.fullName}</Text> : null}
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Email address</Text>
               <TextInput
                 style={[styles.input, errors.email ? styles.inputError : null]}
                 placeholder="you@example.com"
@@ -84,7 +82,7 @@ export default function RegisterScreen({ navigation }) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={form.email}
-                onChangeText={(value) => updateField('email', value)}
+                onChangeText={(v) => updateField('email', v)}
               />
               {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
             </View>
@@ -97,7 +95,7 @@ export default function RegisterScreen({ navigation }) {
                 placeholderTextColor={colors.placeholder}
                 secureTextEntry
                 value={form.password}
-                onChangeText={(value) => updateField('password', value)}
+                onChangeText={(v) => updateField('password', v)}
               />
               {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
             </View>
@@ -110,7 +108,7 @@ export default function RegisterScreen({ navigation }) {
                 placeholderTextColor={colors.placeholder}
                 secureTextEntry
                 value={form.confirmPassword}
-                onChangeText={(value) => updateField('confirmPassword', value)}
+                onChangeText={(v) => updateField('confirmPassword', v)}
               />
               {errors.confirmPassword ? (
                 <Text style={styles.errorText}>{errors.confirmPassword}</Text>
@@ -121,8 +119,14 @@ export default function RegisterScreen({ navigation }) {
               <Text style={styles.primaryButtonText}>Create Account</Text>
             </Pressable>
 
-            <Pressable style={styles.linkButton} onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.linkText}>Already have an account? Sign in</Text>
+            <Pressable
+              style={styles.linkButton}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <Text style={styles.linkText}>
+                Already have an account?{' '}
+                <Text style={styles.linkTextHighlight}>Sign in</Text>
+              </Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -136,58 +140,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  keyboardArea: {
+  flex: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 32,
   },
-  heroCard: {
-    backgroundColor: colors.secondary,
-    borderRadius: 28,
-    padding: 24,
+
+  // Logo
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 36,
+  },
+  iconBox: {
+    width: 76,
+    height: 76,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 18,
   },
-  heroTitle: {
+  appName: {
+    color: colors.textPrimary,
     fontSize: 28,
     fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: 10,
+    marginBottom: 6,
   },
-  heroText: {
-    fontSize: 15,
-    lineHeight: 22,
+  appSubtitle: {
     color: colors.textSecondary,
+    fontSize: 15,
   },
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 28,
-    padding: 22,
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
+
+  // Form
+  formSection: {},
   fieldGroup: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.textPrimary,
     marginBottom: 8,
   },
   input: {
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
     color: colors.textPrimary,
-    backgroundColor: colors.inputBackground,
   },
   inputError: {
     borderColor: colors.error,
@@ -197,25 +204,31 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: 13,
   },
+
+  // Buttons
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: 18,
-    paddingVertical: 15,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 4,
+    marginBottom: 22,
   },
   primaryButtonText: {
-    color: colors.surface,
+    color: colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   linkButton: {
-    paddingVertical: 16,
     alignItems: 'center',
+    paddingVertical: 6,
   },
   linkText: {
-    color: colors.primary,
+    color: colors.textSecondary,
     fontSize: 14,
-    fontWeight: '600',
+  },
+  linkTextHighlight: {
+    color: colors.primary,
+    fontWeight: '700',
   },
 });

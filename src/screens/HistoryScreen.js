@@ -179,13 +179,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    color: colors.surface,
+    color: colors.textOnPrimary,
     fontSize: 30,
     fontWeight: '800',
     marginBottom: 8,
   },
   subtitle: {
-    color: colors.surface,
+    color: colors.textOnPrimary,
     fontSize: 15,
     lineHeight: 22,
     opacity: 0.92,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   activeFilterText: {
-    color: colors.surface,
+    color: colors.textOnPrimary,
   },
   listHeader: {
     flexDirection: 'row',
