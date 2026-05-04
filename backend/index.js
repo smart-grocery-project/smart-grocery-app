@@ -1,22 +1,8 @@
-import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import userRoutes from "./routes/userRoutes.js";
-import inventoryRoutes from "./routes/inventoryRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import historyRoutes from "./routes/historyRoutes.js";
-import weeklyPlanRoutes from "./routes/weeklyPlanRoutes.js";
-import scannerRoutes from "./routes/scannerRoutes.js";
-dotenv.config();
+import app from "./app.js";
 
-const app = express();
-app.use(express.json());
-app.use("/users", userRoutes);
-app.use("/inventory", inventoryRoutes);
-app.use("/products", productRoutes);
-app.use("/history", historyRoutes);
-app.use("/weekly-plan", weeklyPlanRoutes);
-app.use("/scanner", scannerRoutes);
+dotenv.config();
 
 const PORT = 3000;
 
@@ -24,11 +10,6 @@ const PORT = 3000;
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log(err));
-
-// test route
-app.get("/", (req, res) => {
-  res.send("Backend is working 🚀");
-});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);

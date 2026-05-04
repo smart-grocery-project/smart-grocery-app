@@ -5,7 +5,6 @@ import { compareProduct } from "../controllers/productController.js";
 
 const router = express.Router();
 
-// You can protect or not depending on design
 router.post("/", protect, createProduct);
 router.get("/", protect, getProducts);
 router.post("/:id/compare", protect, compareProduct);
