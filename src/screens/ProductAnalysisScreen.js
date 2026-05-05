@@ -3,23 +3,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { MOCK_BUDGET, MOCK_PRODUCTS } from '../data/mockData';
 
-// Static budget remaining — will come from global state / backend later
-const WEEKLY_BUDGET_REMAINING = 42.5;
-
-const fallbackProduct = {
-  name: 'Chicken breast',
-  price: '$5.99',
-  protein: '31g',
-  carbs: '0g',
-  fats: '3.6g',
-  calories: '165 kcal',
-  expiryDate: 'May 24, 2026',
-  category: 'Protein',
-  recommendation:
-    'Great match for your protein goal — fits your $80 budget.',
-  statuses: ['Good choice', 'High protein', 'Within budget'],
-};
+const WEEKLY_BUDGET_REMAINING = MOCK_BUDGET.remaining;
+const fallbackProduct = MOCK_PRODUCTS.chickenBreast;
 
 // Returns a quality label + color based on nutrient type and amount
 function getNutritionQuality(label, valueStr) {

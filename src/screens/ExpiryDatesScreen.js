@@ -3,15 +3,15 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { MOCK_INVENTORY } from '../data/mockData';
 
-// Same items as Inventory — will come from shared state / backend later
-const allItems = [
-  { id: '1', name: 'Whole milk',      detail: '1 bottle · Dairy',   expiryDate: 'Apr 30, 2026' },
-  { id: '2', name: 'Chicken breast',  detail: '2 packs · Protein',  expiryDate: 'May 6, 2026'  },
-  { id: '3', name: 'Greek yogurt',    detail: '1 cup · Dairy',      expiryDate: 'May 8, 2026'  },
-  { id: '4', name: 'Eggs',            detail: '10 left · Protein',  expiryDate: 'May 20, 2026' },
-  { id: '5', name: 'Brown rice',      detail: '1 bag · Carbs',      expiryDate: 'Sep 12, 2026' },
-];
+// Derived from the shared inventory — same source as InventoryScreen
+const allItems = MOCK_INVENTORY.map((p) => ({
+  id: p.id,
+  name: p.name,
+  detail: `${p.quantity} · ${p.category}`,
+  expiryDate: p.expiryDate,
+}));
 
 // Returns days remaining + display info
 function getExpiry(expiryDateStr) {

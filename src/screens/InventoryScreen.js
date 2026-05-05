@@ -11,47 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { MOCK_INVENTORY } from '../data/mockData';
 
 const FILTERS = ['All', 'Protein', 'Carbs', 'Expiring'];
 
-// Updated dates relative to May 2026 so badges show realistic values
-const inventoryItems = [
-  {
-    id: '1',
-    name: 'Chicken breast',
-    category: 'Protein',
-    quantity: '2 packs',
-    expiryDate: 'May 6, 2026',   // 1 day  → urgent
-  },
-  {
-    id: '2',
-    name: 'Greek yogurt',
-    category: 'Dairy',
-    quantity: '1 cup',
-    expiryDate: 'May 8, 2026',   // 3 days → warning
-  },
-  {
-    id: '3',
-    name: 'Brown rice',
-    category: 'Carbs',
-    quantity: '1 bag',
-    expiryDate: 'Sep 12, 2026',  // months away → good
-  },
-  {
-    id: '4',
-    name: 'Whole milk',
-    category: 'Dairy',
-    quantity: '1 bottle',
-    expiryDate: 'Apr 30, 2026',  // already expired
-  },
-  {
-    id: '5',
-    name: 'Eggs',
-    category: 'Protein',
-    quantity: '10 left',
-    expiryDate: 'May 20, 2026',  // 15 days → good
-  },
-];
+const inventoryItems = MOCK_INVENTORY;
 
 // Computes days until expiry and returns label + colors
 function getExpiryBadge(expiryDateStr) {

@@ -3,9 +3,9 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { MOCK_BUDGET } from '../data/mockData';
 
-// Static budget remaining — will come from global state / backend later
-const WEEKLY_BUDGET_REMAINING = 42.5;
+const WEEKLY_BUDGET_REMAINING = MOCK_BUDGET.remaining;
 
 // Strips units / $ and returns a number
 function parse(str) {

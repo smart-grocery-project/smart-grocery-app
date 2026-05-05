@@ -11,48 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { MOCK_RECENT_SCANS } from '../data/mockData';
 
-// Static sample data — will be replaced with real scan + API data later
-const recentScans = [
-  {
-    id: '1',
-    name: 'Whole milk 1L',
-    macros: 'P:3g · C:5g · F:4g',
-    price: '$1.89',
-    product: {
-      name: 'Whole milk 1L',
-      price: '$1.89',
-      protein: '3g',
-      carbs: '5g',
-      fats: '4g',
-      calories: '61 kcal',
-      expiryDate: 'May 18, 2026',
-      category: 'Dairy',
-      recommendation:
-        'A reliable source of calcium and daily nutrients. Good value within your weekly budget.',
-      statuses: ['Good choice', 'Within budget'],
-    },
-  },
-  {
-    id: '2',
-    name: 'Chicken breast',
-    macros: 'P:31g · C:0g · F:4g',
-    price: '$5.99',
-    product: {
-      name: 'Chicken breast',
-      price: '$5.99',
-      protein: '31g',
-      carbs: '0g',
-      fats: '3.6g',
-      calories: '165 kcal',
-      expiryDate: 'May 24, 2026',
-      category: 'Protein',
-      recommendation:
-        'A strong high-protein option for meal prep and balanced lunches this week.',
-      statuses: ['Good choice', 'High protein', 'Within budget'],
-    },
-  },
-];
+const recentScans = MOCK_RECENT_SCANS;
 
 export default function ScanProductScreen({ navigation }) {
   const [searchText, setSearchText] = useState('');
@@ -62,8 +23,8 @@ export default function ScanProductScreen({ navigation }) {
   };
 
   const handleSimulateScan = () => {
-    // Simulate a scan using the first sample product
-    openAnalysis(recentScans[1].product);
+    // Simulate a scan using the chicken breast product
+    openAnalysis(recentScans[0].product);
   };
 
   return (
@@ -169,9 +130,9 @@ export default function ScanProductScreen({ navigation }) {
             >
               <View style={styles.recentInfo}>
                 <Text style={styles.recentName}>{item.name}</Text>
-                <Text style={styles.recentMacros}>{item.macros}</Text>
+                <Text style={styles.recentMacros}>{item.subtitle}</Text>
               </View>
-              <Text style={styles.recentPrice}>{item.price}</Text>
+              <Text style={styles.recentPrice}>{item.product.price}</Text>
             </Pressable>
           ))}
         </View>

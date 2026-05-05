@@ -3,19 +3,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-
-// Static budget data — will come from backend later
-const budgetData = {
-  remaining: 42.50,
-  total: 80,
-};
-
-// Static nutrition goal data — will come from backend / settings later
-const nutritionGoals = [
-  { label: 'Protein', value: '68g', color: '#4a9eff' },
-  { label: 'Carbs',   value: '142g', color: '#f5a623' },
-  { label: 'Fats',    value: '38g',  color: '#ff6b6b' },
-];
+import {
+  MOCK_BUDGET,
+  MOCK_NUTRITION_SUMMARY,
+  MOCK_EXPIRING_SOON,
+} from '../data/mockData';
 
 // Quick action tiles
 const quickActions = [
@@ -46,24 +38,6 @@ const quickActions = [
   },
 ];
 
-// Static expiring soon items — will come from inventory data later
-const expiringSoon = [
-  {
-    id: '1',
-    name: 'Chicken breast',
-    meta: '500g · Protein · Mar 20',
-    label: 'Today',
-    urgent: true,
-  },
-  {
-    id: '2',
-    name: 'Greek yogurt',
-    meta: '200g · Dairy · Mar 19',
-    label: '2 days',
-    urgent: false,
-  },
-];
-
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) return 'Good morning';
@@ -75,7 +49,7 @@ function getGreeting() {
 export default function HomeScreen({ navigation }) {
   // userName will come from global auth context once backend is connected
   const userName = 'Smart Shopper';
-  const budgetPercent = budgetData.remaining / budgetData.total;
+  const budgetPercent = MOCK_BUDGET.remaining / MOCK_BUDGET.total;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -94,10 +68,10 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.budgetLabel}>Weekly budget remaining</Text>
           <View style={styles.budgetAmountRow}>
             <Text style={styles.budgetAmount}>
-              ${budgetData.remaining.toFixed(2)}
+              ${MOCK_BUDGET.remaining.toFixed(2)}
             </Text>
             <Text style={styles.budgetDivider}> / </Text>
-            <Text style={styles.budgetTotal}>${budgetData.total}</Text>
+            <Text style={styles.budgetTotal}>${MOCK_BUDGET.total}</Text>
           </View>
           <View style={styles.progressTrack}>
             <View
@@ -112,7 +86,7 @@ export default function HomeScreen({ navigation }) {
         {/* Nutrition goals */}
         <Text style={styles.sectionLabel}>NUTRITION GOALS</Text>
         <View style={styles.nutritionRow}>
-          {nutritionGoals.map((item) => (
+          {MOCK_NUTRITION_SUMMARY.map((item) => (
             <View key={item.label} style={styles.nutritionChip}>
               <Text style={[styles.nutritionValue, { color: item.color }]}>
                 {item.value}
@@ -142,7 +116,7 @@ export default function HomeScreen({ navigation }) {
 
         {/* Expiring soon */}
         <Text style={styles.sectionLabel}>EXPIRING SOON</Text>
-        {expiringSoon.map((item) => (
+        {MOCK_EXPIRING_SOON.map((item) => (
           <View key={item.id} style={styles.expiryCard}>
             <View style={styles.expiryInfo}>
               <Text style={styles.expiryName}>{item.name}</Text>

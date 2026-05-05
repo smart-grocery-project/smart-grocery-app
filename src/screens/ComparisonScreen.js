@@ -3,25 +3,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { MOCK_PRODUCTS } from '../data/mockData';
 
 const TABS = ['Protein', 'Carbs', 'Price'];
 
-// Static comparison product — will come from backend product database later
-// Priced at $4.99 so it wins the Price tab (chicken wins Protein tab)
-const COMPARISON_PRODUCT = {
-  name: 'Turkey breast 500g',
-  store: 'NaturalYou',
-  price: '$4.99',
-  protein: '95g',
-  carbs: '0g',
-  fats: '8g',
-  calories: '189 kcal',
-  expiryDate: 'May 28, 2026',
-  category: 'Protein',
-  recommendation:
-    'A budget-friendly protein option — lower cost per serving than chicken breast.',
-  statuses: ['Good choice', 'High protein'],
-};
+// Comparison product pulled from shared mock data
+const COMPARISON_PRODUCT = MOCK_PRODUCTS.turkeyBreast;
 
 // Strips units and $ signs and returns a number
 function parse(str) {

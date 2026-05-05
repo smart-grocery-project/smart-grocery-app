@@ -2,51 +2,11 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import { MOCK_HISTORY } from '../data/mockData';
 
 const filters = ['All', 'Added', 'Scanned', 'Recommended'];
 
-const historyRecords = [
-  {
-    id: '1',
-    productName: 'Chicken breast',
-    category: 'Protein',
-    actionType: 'Scanned',
-    date: 'Apr 20, 2026',
-    note: 'Barcode checked before adding to your grocery plan.',
-  },
-  {
-    id: '2',
-    productName: 'Greek yogurt',
-    category: 'Dairy',
-    actionType: 'Added',
-    date: 'Apr 19, 2026',
-    note: 'Added to inventory with an upcoming expiry date.',
-  },
-  {
-    id: '3',
-    productName: 'Brown rice',
-    category: 'Carbs',
-    actionType: 'Recommended',
-    date: 'Apr 18, 2026',
-    note: 'Suggested as a budget-friendly pantry staple.',
-  },
-  {
-    id: '4',
-    productName: 'Whole milk',
-    category: 'Dairy',
-    actionType: 'Scanned',
-    date: 'Apr 17, 2026',
-    note: 'Nutrition and product details reviewed.',
-  },
-  {
-    id: '5',
-    productName: 'Eggs',
-    category: 'Protein',
-    actionType: 'Added',
-    date: 'Apr 16, 2026',
-    note: 'Added to inventory for meal planning.',
-  },
-];
+const historyRecords = MOCK_HISTORY;
 
 const actionStyles = {
   Added: {
