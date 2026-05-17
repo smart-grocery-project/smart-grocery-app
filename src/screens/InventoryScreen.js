@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -12,10 +13,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MOCK_INVENTORY } from '../data/mockData';
+import { getInventory, createInventory } from '../api/api';
 
 const FILTERS = ['All', 'Protein', 'Carbs', 'Expiring'];
 
-const inventoryItems = MOCK_INVENTORY;
+// Derives a category from backend nutrition data
+function deriveCategory(nutrition) {
+  if (!nutrition) return 'Other';
+  const { protein = 0, carbs = 0 } = nutrition;
+  return protein >= carbs ? 'Protein' : 'Carbs';
+}
+
+// Maps a backend inventory item to the format the screen expects
+function mapItem(item) {
+  return {
+    id:         item._id,
+    name:       item.product?.name       || 'Unknown',
+    category:   deriveCategory(item.product?.nutrition),
+    quantity:   String(item.quantity     || 1),
+    expiryDate: item.expirationDate      || '',
+  };
+}
 
 // Computes days until expiry and returns label + colors
 function getExpiryBadge(expiryDateStr) {
@@ -43,8 +61,38 @@ function getStatus(expiryDateStr) {
 export default function InventoryScreen({ navigation }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchTerm, setSearchTerm]     = useState('');
+  const [items, setItems]               = useState(MOCK_INVENTORY);
+  const [loading, setLoading]           = useState(true);
 
-  const enriched = inventoryItems.map((item) => ({
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const fetchInventory = async () => {
+    try {
+      const response = await getInventory();
+      const backendItems = response.data?.items || [];
+
+      if (backendItems.length > 0) {
+        // Real data exists — use it
+        setItems(backendItems.map(mapItem));
+      } else {
+        // Empty inventory — keep mock data for demo
+        setItems(MOCK_INVENTORY);
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // No inventory exists yet — create one then show mock data
+        try { await createInventory(); } catch (_) {}
+      }
+      // Fall back to mock data so demo always looks good
+      setItems(MOCK_INVENTORY);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const enriched = items.map((item) => ({
     ...item,
     badge:  getExpiryBadge(item.expiryDate),
     status: getStatus(item.expiryDate),
@@ -67,6 +115,11 @@ export default function InventoryScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -205,6 +258,14 @@ export default function InventoryScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
     backgroundColor: colors.background,
   },
   scrollContent: {

@@ -15,23 +15,39 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { validateLogin } from '../utils/validation';
+import { loginUser } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 const initialForm = { email: '', password: '' };
 
 export default function LoginScreen({ navigation }) {
-  const [form, setForm] = useState(initialForm);
-  const [errors, setErrors] = useState({});
+  const [form, setForm]       = useState(initialForm);
+  const [errors, setErrors]   = useState({});
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const updateField = (field, value) => {
     setForm((curr) => ({ ...curr, [field]: value }));
     setErrors((curr) => ({ ...curr, [field]: '' }));
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const nextErrors = validateLogin(form);
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
-    navigation.replace('MainTabs');
+
+    setLoading(true);
+    try {
+      const response = await loginUser(form.email.trim(), form.password);
+      const { user, token } = response.data;
+      signIn(user, token);
+      navigation.replace('MainTabs');
+    } catch (error) {
+      const message = error.response?.data?.message || 'Something went wrong. Try again.';
+      Alert.alert('Login failed', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,8 +112,14 @@ export default function LoginScreen({ navigation }) {
               {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
             </View>
 
-            <Pressable style={styles.primaryButton} onPress={handleLogin}>
-              <Text style={styles.primaryButtonText}>Sign in</Text>
+            <Pressable
+              style={[styles.primaryButton, loading && { opacity: 0.7 }]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.primaryButtonText}>
+                {loading ? 'Signing in...' : 'Sign in'}
+              </Text>
             </Pressable>
 
             {/* Divider */}

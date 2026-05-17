@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,6 +15,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { validateRegister } from '../utils/validation';
+import { registerUser } from '../api/api';
+import { useAuth } from '../context/AuthContext';
+import { loginUser } from '../api/api';
 
 const initialForm = {
   fullName: '',
@@ -23,19 +27,36 @@ const initialForm = {
 };
 
 export default function RegisterScreen({ navigation }) {
-  const [form, setForm] = useState(initialForm);
-  const [errors, setErrors] = useState({});
+  const [form, setForm]       = useState(initialForm);
+  const [errors, setErrors]   = useState({});
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const updateField = (field, value) => {
     setForm((curr) => ({ ...curr, [field]: value }));
     setErrors((curr) => ({ ...curr, [field]: '' }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     const nextErrors = validateRegister(form);
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
-    navigation.replace('MainTabs');
+
+    setLoading(true);
+    try {
+      // Register the user
+      await registerUser(form.fullName.trim(), form.email.trim(), form.password);
+      // Auto login after successful registration
+      const loginResponse = await loginUser(form.email.trim(), form.password);
+      const { user, token } = loginResponse.data;
+      signIn(user, token);
+      navigation.replace('MainTabs');
+    } catch (error) {
+      const message = error.response?.data?.message || 'Something went wrong. Try again.';
+      Alert.alert('Registration failed', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -115,8 +136,14 @@ export default function RegisterScreen({ navigation }) {
               ) : null}
             </View>
 
-            <Pressable style={styles.primaryButton} onPress={handleRegister}>
-              <Text style={styles.primaryButtonText}>Create Account</Text>
+            <Pressable
+              style={[styles.primaryButton, loading && { opacity: 0.7 }]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              <Text style={styles.primaryButtonText}>
+                {loading ? 'Creating account...' : 'Create Account'}
+              </Text>
             </Pressable>
 
             <Pressable
