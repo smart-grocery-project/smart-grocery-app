@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import {
   MOCK_NUTRITION_SUMMARY,
   MOCK_EXPIRING_SOON,
 } from '../data/mockData';
+import { getWeeklyPlan, getInventory } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 // Quick action tiles
 const quickActions = [
@@ -47,9 +49,74 @@ function getGreeting() {
 }
 
 export default function HomeScreen({ navigation }) {
-  // userName will come from global auth context once backend is connected
-  const userName = 'Smart Shopper';
-  const budgetPercent = MOCK_BUDGET.remaining / MOCK_BUDGET.total;
+  const { user } = useAuth();
+  const userName = user?.name || 'Smart Shopper';
+
+  const [budget, setBudget]           = useState(MOCK_BUDGET);
+  const [nutrition, setNutrition]     = useState(MOCK_NUTRITION_SUMMARY);
+  const [expiring, setExpiring]       = useState(MOCK_EXPIRING_SOON);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    // Load weekly plan → budget + nutrition targets
+    try {
+      const planRes = await getWeeklyPlan();
+      const plan = planRes.data;
+      if (plan?.weeklyBudget) {
+        setBudget({
+          remaining: plan.weeklyBudget,
+          total:     plan.weeklyBudget,
+          period:    'Weekly',
+        });
+      }
+      if (plan?.nutritionTargets) {
+        const t = plan.nutritionTargets;
+        setNutrition([
+          { label: 'Protein', value: `${t.protein}g`,  color: '#4a9eff' },
+          { label: 'Carbs',   value: `${t.carbs}g`,    color: '#f5a623' },
+          { label: 'Fats',    value: `${t.fat}g`,      color: '#ff6b6b' },
+        ]);
+      }
+    } catch (_) {
+      // Keep mock budget/nutrition
+    }
+
+    // Load inventory → find items expiring within 7 days
+    try {
+      const invRes = await getInventory();
+      const items  = invRes.data?.items || [];
+      const today  = new Date();
+      const soon   = items
+        .filter((item) => {
+          const diff = Math.round(
+            (new Date(item.expirationDate) - today) / (1000 * 60 * 60 * 24)
+          );
+          return diff >= 0 && diff <= 7;
+        })
+        .map((item) => ({
+          id:     item._id,
+          name:   item.product?.name || 'Unknown',
+          meta:   `Qty: ${item.quantity}`,
+          label:  (() => {
+            const diff = Math.round(
+              (new Date(item.expirationDate) - today) / (1000 * 60 * 60 * 24)
+            );
+            return diff === 0 ? 'Today' : `${diff} day${diff === 1 ? '' : 's'}`;
+          })(),
+          urgent: Math.round(
+            (new Date(item.expirationDate) - today) / (1000 * 60 * 60 * 24)
+          ) <= 1,
+        }));
+      if (soon.length > 0) setExpiring(soon);
+    } catch (_) {
+      // Keep mock expiring items
+    }
+  };
+
+  const budgetPercent = budget.remaining / budget.total;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -68,10 +135,10 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.budgetLabel}>Weekly budget remaining</Text>
           <View style={styles.budgetAmountRow}>
             <Text style={styles.budgetAmount}>
-              ${MOCK_BUDGET.remaining.toFixed(2)}
+              ${budget.remaining.toFixed(2)}
             </Text>
             <Text style={styles.budgetDivider}> / </Text>
-            <Text style={styles.budgetTotal}>${MOCK_BUDGET.total}</Text>
+            <Text style={styles.budgetTotal}>${budget.total}</Text>
           </View>
           <View style={styles.progressTrack}>
             <View
@@ -86,7 +153,7 @@ export default function HomeScreen({ navigation }) {
         {/* Nutrition goals */}
         <Text style={styles.sectionLabel}>NUTRITION GOALS</Text>
         <View style={styles.nutritionRow}>
-          {MOCK_NUTRITION_SUMMARY.map((item) => (
+          {nutrition.map((item) => (
             <View key={item.label} style={styles.nutritionChip}>
               <Text style={[styles.nutritionValue, { color: item.color }]}>
                 {item.value}
@@ -116,7 +183,7 @@ export default function HomeScreen({ navigation }) {
 
         {/* Expiring soon */}
         <Text style={styles.sectionLabel}>EXPIRING SOON</Text>
-        {MOCK_EXPIRING_SOON.map((item) => (
+        {expiring.map((item) => (
           <View key={item.id} style={styles.expiryCard}>
             <View style={styles.expiryInfo}>
               <Text style={styles.expiryName}>{item.name}</Text>

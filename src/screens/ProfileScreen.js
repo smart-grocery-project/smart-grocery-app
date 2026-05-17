@@ -250,9 +250,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.card}>
           <Pressable
             style={styles.accountRow}
-            onPress={() =>
-              Alert.alert('History', 'Tap History from the Home screen to view your activity.')
-            }
+            onPress={() => navigation.navigate('HomeTab', { screen: 'History' })}
           >
             <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
             <Text style={styles.accountRowText}>View history</Text>

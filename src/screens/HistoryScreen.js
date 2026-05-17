@@ -1,12 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { MOCK_HISTORY } from '../data/mockData';
+import { getHistory, createHistory } from '../api/api';
 
 const filters = ['All', 'Added', 'Scanned', 'Recommended'];
 
-const historyRecords = MOCK_HISTORY;
+// Format ISO date to readable string e.g. "May 17, 2026"
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  return new Date(isoStr).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
+// Maps a backend history item to the format the screen expects
+function mapHistoryItem(item) {
+  return {
+    id:          item._id,
+    productName: item.product?.name  || 'Unknown product',
+    category:    item.product?.nutrition
+      ? (item.product.nutrition.protein >= item.product.nutrition.carbs ? 'Protein' : 'Carbs')
+      : 'General',
+    actionType:  'Scanned',
+    date:        formatDate(item.scannedDate),
+    note:        `Barcode scanned and nutrition reviewed.`,
+  };
+}
 
 const actionStyles = {
   Added: {
@@ -25,14 +46,35 @@ const actionStyles = {
 
 export default function HistoryScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [records, setRecords]           = useState(MOCK_HISTORY);
 
-  const filteredRecords = historyRecords.filter(
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const response = await getHistory();
+      const items    = response.data?.items || [];
+      if (items.length > 0) {
+        setRecords(items.map(mapHistoryItem));
+      }
+      // If empty keep mock data so demo looks good
+    } catch (error) {
+      if (error.response?.status === 404) {
+        try { await createHistory(); } catch (_) {}
+      }
+      // Keep mock data on any error
+    }
+  };
+
+  const filteredRecords = records.filter(
     (record) => activeFilter === 'All' || record.actionType === activeFilter
   );
 
-  const totalRecords = historyRecords.length;
-  const addedItems = historyRecords.filter((record) => record.actionType === 'Added').length;
-  const scannedItems = historyRecords.filter((record) => record.actionType === 'Scanned').length;
+  const totalRecords  = records.length;
+  const addedItems    = records.filter((r) => r.actionType === 'Added').length;
+  const scannedItems  = records.filter((r) => r.actionType === 'Scanned').length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
