@@ -36,16 +36,8 @@ function mapItem(item) {
 }
 
 // Computes days until expiry and returns label + colors
-function parseDate(str) {
-  if (!str) return new Date(NaN);
-  // ISO format from backend e.g. 2026-05-06T00:00:00.000Z
-  if (str.includes('-')) return new Date(str);
-  // Human format from mockData e.g. "May 6, 2026"
-  return new Date(Date.parse(str));
-}
-
 function getExpiryBadge(expiryDateStr) {
-  const expiry = parseDate(expiryDateStr);
+  const expiry = new Date(expiryDateStr);
   const today  = new Date();
   today.setHours(0, 0, 0, 0);
   expiry.setHours(0, 0, 0, 0);
