@@ -15,7 +15,7 @@ const allItems = MOCK_INVENTORY.map((p) => ({
 
 // Returns days remaining + display info
 function getExpiry(expiryDateStr) {
-  const expiry = new Date(expiryDateStr);
+  const expiry = new Date(expiryDateStr.includes('T') ? expiryDateStr : expiryDateStr + 'T00:00:00');
   const today  = new Date();
   today.setHours(0, 0, 0, 0);
   expiry.setHours(0, 0, 0, 0);
