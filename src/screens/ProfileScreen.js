@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Pressable,
@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { getWeeklyPlan, saveWeeklyPlan } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 const BUDGET_PERIODS = ['Weekly', 'Bi-weekly', 'Monthly'];
 
@@ -19,21 +21,28 @@ const NUTRITION_GOALS = [
     key: 'protein_rich',
     label: 'Protein rich',
     subtitle: 'High protein, low fat diet',
-    macros: { protein: 120, carbs: 200, fats: 55 },
+    macros: { protein: 120, carbs: 200, fats: 55, calories: 2000 },
   },
   {
     key: 'carb_rich',
     label: 'Carb rich',
     subtitle: 'High carbs for energy',
-    macros: { protein: 80, carbs: 280, fats: 55 },
+    macros: { protein: 80, carbs: 280, fats: 55, calories: 2200 },
   },
   {
     key: 'balanced',
     label: 'Balanced',
     subtitle: 'Equal macro distribution',
-    macros: { protein: 100, carbs: 230, fats: 70 },
+    macros: { protein: 100, carbs: 230, fats: 70, calories: 2100 },
   },
 ];
+
+// Finds the closest matching goal from saved backend macros
+function matchGoal(protein) {
+  if (protein >= 110) return 'protein_rich';
+  if (protein <= 85)  return 'carb_rich';
+  return 'balanced';
+}
 
 // Max values used to calculate bar widths
 const MACRO_MAX   = { protein: 150, carbs: 300, fats: 90 };
@@ -50,22 +59,53 @@ export default function ProfileScreen({ navigation }) {
   const [budgetPeriod, setBudgetPeriod] = useState('Weekly');
   const [selectedGoal, setSelectedGoal] = useState('protein_rich');
   const [justSaved, setJustSaved]       = useState(false);
+  const [saving, setSaving]             = useState(false);
+  const { signOut } = useAuth();
 
   const currentGoal = NUTRITION_GOALS.find((g) => g.key === selectedGoal);
 
-  const handleSave = () => {
-    // Will POST to backend settings endpoint once connected
-    Alert.alert(
-      'Settings saved',
-      'Your budget and nutrition preferences have been saved locally. They will sync to the backend once it\'s connected.',
-      [{ text: 'OK' }]
-    );
-    setJustSaved(true);
-    setTimeout(() => setJustSaved(false), 2500);
+  // Load saved plan from backend on mount
+  useEffect(() => {
+    const loadPlan = async () => {
+      try {
+        const response = await getWeeklyPlan();
+        const plan = response.data;
+        if (plan?.weeklyBudget) {
+          setBudgetAmount(String(plan.weeklyBudget));
+        }
+        if (plan?.nutritionTargets?.protein) {
+          setSelectedGoal(matchGoal(plan.nutritionTargets.protein));
+        }
+      } catch (_) {
+        // No plan yet — keep defaults
+      }
+    };
+    loadPlan();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await saveWeeklyPlan({
+        weeklyBudget: parseInt(budgetAmount) || 80,
+        calories:     currentGoal.macros.calories,
+        protein:      currentGoal.macros.protein,
+        carbs:        currentGoal.macros.carbs,
+        fat:          currentGoal.macros.fats,
+      });
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2500);
+    } catch (error) {
+      Alert.alert('Error', 'Could not save settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSignOut = () =>
+  const handleSignOut = () => {
+    signOut();
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -190,14 +230,15 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Save button */}
         <Pressable
-          style={[styles.saveButton, justSaved && styles.saveButtonSaved]}
+          style={[styles.saveButton, justSaved && styles.saveButtonSaved, saving && { opacity: 0.7 }]}
           onPress={handleSave}
+          disabled={saving}
         >
           {justSaved ? (
             <Ionicons name="checkmark" size={18} color={colors.textOnPrimary} style={{ marginRight: 8 }} />
           ) : null}
           <Text style={styles.saveButtonText}>
-            {justSaved ? 'Saved!' : 'Save settings'}
+            {saving ? 'Saving...' : justSaved ? 'Saved!' : 'Save settings'}
           </Text>
         </Pressable>
 
