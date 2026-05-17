@@ -54,4 +54,18 @@ export const addHistoryItem = (productId)    =>
 export const getWeeklyPlan  = ()             => api.get('/weekly-plan');
 export const saveWeeklyPlan = (data)         => api.post('/weekly-plan', data);
 
+// ─── Scanner ──────────────────────────────────────────────────────────────────
+// Uploads an image to the backend so it can detect the barcode and return the product.
+export const scanBarcodeImage = (imageUri) => {
+  const formData = new FormData();
+  formData.append('image', {
+    uri:  imageUri,
+    type: 'image/jpeg',
+    name: 'scan.jpg',
+  });
+  return api.post('/scanner', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 export default api;

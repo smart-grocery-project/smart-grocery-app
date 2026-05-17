@@ -12,19 +12,85 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MOCK_RECENT_SCANS } from '../data/mockData';
+import { scanBarcodeImage } from '../api/api';
+import * as ImagePicker from 'expo-image-picker';
 
 const recentScans = MOCK_RECENT_SCANS;
 
+// Maps backend product to the format ProductAnalysisScreen expects
+function mapProduct(p) {
+  const n = p.nutrition || {};
+  const category = (n.protein || 0) >= (n.carbs || 0) ? 'Protein' : 'Carbs';
+  return {
+    id:         p._id,
+    name:       p.name || 'Scanned product',
+    store:      p.store || 'Unknown store',
+    price:      `$${(p.price || 0).toFixed(2)}`,
+    protein:    `${n.protein || 0}g`,
+    carbs:      `${n.carbs || 0}g`,
+    fats:       `${n.fat || 0}g`,
+    calories:   `${n.calories || 0} kcal`,
+    category,
+    quantity:   '1 unit',
+    expiryDate: 'TBD',
+    recommendation: 'Scanned successfully — review nutrition before adding.',
+    statuses:   ['Scanned'],
+  };
+}
+
 export default function ScanProductScreen({ navigation }) {
   const [searchText, setSearchText] = useState('');
+  const [scanning, setScanning]     = useState(false);
 
   const openAnalysis = (product) => {
     navigation.navigate('ProductAnalysis', { product });
   };
 
-  const handleSimulateScan = () => {
-    // Simulate a scan using the chicken breast product
-    openAnalysis(recentScans[0].product);
+  // Uploads an image to the backend scanner and opens the analysis screen
+  const uploadAndScan = async (imageUri) => {
+    setScanning(true);
+    try {
+      const response = await scanBarcodeImage(imageUri);
+      openAnalysis(mapProduct(response.data));
+    } catch (error) {
+      const message = error.response?.data?.message ||
+        'Could not detect barcode. Try a clearer photo.';
+      Alert.alert('Scan failed', message);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  // Opens the camera, captures a photo, then uploads it
+  const handleScan = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Camera access', 'Please allow camera access to scan products.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+      base64: false,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      uploadAndScan(result.assets[0].uri);
+    }
+  };
+
+  // Picks an image from the gallery and uploads it
+  const handleGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Gallery access', 'Please allow access to your photos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+      base64: false,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      uploadAndScan(result.assets[0].uri);
+    }
   };
 
   return (
@@ -75,21 +141,23 @@ export default function ScanProductScreen({ navigation }) {
             <Text style={styles.actionLabel}>Flash</Text>
           </Pressable>
 
-          <Pressable style={styles.actionBtn} onPress={handleSimulateScan}>
-            <View style={[styles.actionCircle, styles.actionCircleActive]}>
+          <Pressable
+            style={styles.actionBtn}
+            onPress={handleScan}
+            disabled={scanning}
+          >
+            <View style={[styles.actionCircle, styles.actionCircleActive, scanning && { opacity: 0.6 }]}>
               <Ionicons name="scan" size={26} color={colors.textOnPrimary} />
             </View>
-            <Text style={[styles.actionLabel, styles.actionLabelActive]}>Scan</Text>
+            <Text style={[styles.actionLabel, styles.actionLabelActive]}>
+              {scanning ? 'Scanning...' : 'Scan'}
+            </Text>
           </Pressable>
 
           <Pressable
             style={styles.actionBtn}
-            onPress={() =>
-              Alert.alert(
-                'Gallery',
-                'Picking from gallery will be available with real camera integration.'
-              )
-            }
+            onPress={handleGallery}
+            disabled={scanning}
           >
             <View style={styles.actionCircle}>
               <Ionicons name="image-outline" size={22} color={colors.textPrimary} />
