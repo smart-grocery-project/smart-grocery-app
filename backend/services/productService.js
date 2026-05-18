@@ -19,11 +19,27 @@ const fetchFromAPI = async (barcode) => {
   return data.product;
 };
 
+// Picks the best available name from the API response.
+// Open Food Facts stores names in several language fields — fall back through them.
+const pickBestName = (apiProduct) => {
+  return (
+    apiProduct.product_name ||
+    apiProduct.product_name_en ||
+    apiProduct.product_name_fr ||
+    apiProduct.product_name_ar ||
+    apiProduct.generic_name ||
+    apiProduct.generic_name_en ||
+    apiProduct.brands ||
+    apiProduct.abbreviated_product_name ||
+    "Unknown Product"
+  );
+};
+
 // Map API data → your schema
 const mapToProductSchema = (barcode, apiProduct) => {
   return {
     barcode,
-    name: apiProduct.product_name || "Unknown Product",
+    name: pickBestName(apiProduct),
     price: 0,
     nutrition: {
       calories: apiProduct.nutriments?.["energy-kcal_100g"] || 0,
@@ -38,7 +54,8 @@ const mapToProductSchema = (barcode, apiProduct) => {
 export const findOrCreateProductByBarcode = async (barcode) => {
   let product = await Product.findOne({ barcode });
 
-  if (product) {
+  // If cached but had a bad name, re-fetch from API and update it
+  if (product && product.name && product.name !== "Unknown Product") {
     return product;
   }
 
@@ -50,7 +67,13 @@ export const findOrCreateProductByBarcode = async (barcode) => {
 
   const productData = mapToProductSchema(barcode, apiProduct);
 
-  product = await Product.create(productData);
+  if (product) {
+    // Update the existing bad-name entry with the better name
+    Object.assign(product, productData);
+    await product.save();
+  } else {
+    product = await Product.create(productData);
+  }
 
   return product;
 };
