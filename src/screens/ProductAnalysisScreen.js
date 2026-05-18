@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Alert } from 'react-native';
 import { colors } from '../theme/colors';
 import { MOCK_BUDGET, MOCK_PRODUCTS } from '../data/mockData';
+import { addInventoryItem, createInventory } from '../api/api';
 
 const WEEKLY_BUDGET_REMAINING = MOCK_BUDGET.remaining;
 const fallbackProduct = MOCK_PRODUCTS.chickenBreast;
@@ -70,6 +72,44 @@ export default function ProductAnalysisScreen({ navigation, route }) {
     const trimmed = nameInput.trim();
     if (trimmed) setProduct({ ...product, name: trimmed });
     setNameModalVisible(false);
+  };
+
+  const [adding, setAdding] = useState(false);
+
+  const handleAddToInventory = async () => {
+    // Mock products (id starts with 'p') aren't in the real DB
+    if (!product.id || String(product.id).startsWith('p')) {
+      Alert.alert(
+        'Demo product',
+        'This is a sample product — scan a real barcode to add it to your inventory.'
+      );
+      return;
+    }
+
+    setAdding(true);
+    try {
+      try {
+        await addInventoryItem(product.id, 1);
+      } catch (error) {
+        // Inventory doesn't exist yet — create it then retry
+        if (error.response?.status === 404) {
+          await createInventory();
+          await addInventoryItem(product.id, 1);
+        } else {
+          throw error;
+        }
+      }
+      Alert.alert('Added!', `${product.name} was added to your inventory.`, [
+        { text: 'View inventory', onPress: () => navigation.navigate('InventoryTab') },
+        { text: 'OK' },
+      ]);
+    } catch (error) {
+      const message = error.response?.data?.message ||
+        'Could not add item. Try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setAdding(false);
+    }
   };
 
   const nutritionMetrics = [
@@ -202,10 +242,13 @@ export default function ProductAnalysisScreen({ navigation, route }) {
           </Pressable>
 
           <Pressable
-            style={styles.addButton}
-            onPress={() => navigation.navigate('InventoryTab')}
+            style={[styles.addButton, adding && { opacity: 0.7 }]}
+            onPress={handleAddToInventory}
+            disabled={adding}
           >
-            <Text style={styles.addButtonText}>Add to inventory</Text>
+            <Text style={styles.addButtonText}>
+              {adding ? 'Adding...' : 'Add to inventory'}
+            </Text>
           </Pressable>
         </View>
       </ScrollView>

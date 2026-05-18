@@ -1,9 +1,11 @@
 import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 
 import ComparisonScreen from '../screens/ComparisonScreen';
 import ExpiryDatesScreen from '../screens/ExpiryDatesScreen';
@@ -117,10 +119,26 @@ function MainTabs() {
 
 // Root stack: Login / Register sit outside the tabs
 export default function AppNavigator() {
+  const { token, loading } = useAuth();
+
+  // While restoring saved session — show a brief loader
+  if (loading) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName={token ? 'MainTabs' : 'Login'}
+        >
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="MainTabs" component={MainTabs} />
