@@ -47,6 +47,7 @@ export const getInventory = async (req, res) => {
 // ADD item to inventory
 export const addItem = async (req, res) => {
   try {
+    console.log("[ADD ITEM] hit:", { userId: req.user?.userId, body: req.body });
     const userId = req.user.userId;
     const { product, quantity } = req.body;
 
@@ -63,8 +64,10 @@ export const addItem = async (req, res) => {
 
     await inventory.save();
 
+    console.log("[ADD ITEM] success");
     res.status(200).json(inventory);
   } catch (error) {
+    console.log("[ADD ITEM] error:", error.message);
     res.status(500).json({ message: error.message });
   }
 };
