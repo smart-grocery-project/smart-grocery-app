@@ -1,5 +1,13 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -31,10 +39,25 @@ function getNutritionQuality(label, valueStr) {
 }
 
 export default function ProductAnalysisScreen({ navigation, route }) {
-  const product = route.params?.product || fallbackProduct;
+  const initialProduct = route.params?.product || fallbackProduct;
+  const [product, setProduct] = useState(initialProduct);
+  const [priceModalVisible, setPriceModalVisible] = useState(false);
+  const [priceInput, setPriceInput] = useState('');
 
-  const productPrice = parseFloat(product.price?.replace('$', '') || '0');
+  const productPrice  = parseFloat(product.price?.replace('$', '') || '0');
   const afterPurchase = WEEKLY_BUDGET_REMAINING - productPrice;
+
+  const openPriceModal = () => {
+    setPriceInput(productPrice ? String(productPrice) : '');
+    setPriceModalVisible(true);
+  };
+
+  const savePrice = () => {
+    const cleaned = priceInput.replace(/[^0-9.]/g, '');
+    const num = parseFloat(cleaned) || 0;
+    setProduct({ ...product, price: `$${num.toFixed(2)}` });
+    setPriceModalVisible(false);
+  };
 
   const nutritionMetrics = [
     { label: 'Protein', value: product.protein },
@@ -63,7 +86,10 @@ export default function ProductAnalysisScreen({ navigation, route }) {
             <Text style={styles.productName}>{product.name}</Text>
             <Text style={styles.productCategory}>{product.category}</Text>
           </View>
-          <Text style={styles.productPrice}>{product.price}</Text>
+          <Pressable style={styles.priceWrapper} onPress={openPriceModal}>
+            <Text style={styles.productPrice}>{product.price}</Text>
+            <Ionicons name="pencil" size={12} color={colors.primary} style={{ marginLeft: 4 }} />
+          </Pressable>
         </View>
 
         {/* Recommendation banner */}
@@ -165,6 +191,49 @@ export default function ProductAnalysisScreen({ navigation, route }) {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Price input modal */}
+      <Modal
+        visible={priceModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPriceModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Enter product price</Text>
+            <Text style={styles.modalSubtitle}>
+              Public databases don't track prices, so add it manually.
+            </Text>
+            <View style={styles.priceInputRow}>
+              <Text style={styles.priceCurrency}>$</Text>
+              <TextInput
+                style={styles.priceInput}
+                value={priceInput}
+                onChangeText={setPriceInput}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={colors.placeholder}
+                autoFocus
+              />
+            </View>
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setPriceModalVisible(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={savePrice}
+              >
+                <Text style={styles.modalButtonSaveText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -222,6 +291,90 @@ const styles = StyleSheet.create({
   heroLeft: {
     flex: 1,
     paddingRight: 12,
+  },
+  priceWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  // Price modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 22,
+  },
+  modalTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  modalSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginBottom: 18,
+    lineHeight: 18,
+  },
+  priceInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  priceCurrency: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: '800',
+    marginRight: 6,
+  },
+  priceInput: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButtonCancelText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalButtonSave: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonSaveText: {
+    color: colors.textOnPrimary,
+    fontSize: 15,
+    fontWeight: '700',
   },
   productName: {
     color: colors.textPrimary,
