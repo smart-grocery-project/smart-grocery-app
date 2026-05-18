@@ -68,4 +68,8 @@ export const scanBarcodeImage = (imageUri) => {
   });
 };
 
+// Sends just a barcode number to the backend — used by the live barcode scanner.
+export const lookupBarcode = (barcode) =>
+  api.post('/scanner/barcode', { barcode });
+
 export default api;

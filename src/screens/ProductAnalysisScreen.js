@@ -43,6 +43,8 @@ export default function ProductAnalysisScreen({ navigation, route }) {
   const [product, setProduct] = useState(initialProduct);
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const [priceInput, setPriceInput] = useState('');
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const [nameInput, setNameInput] = useState('');
 
   const productPrice  = parseFloat(product.price?.replace('$', '') || '0');
   const afterPurchase = WEEKLY_BUDGET_REMAINING - productPrice;
@@ -57,6 +59,17 @@ export default function ProductAnalysisScreen({ navigation, route }) {
     const num = parseFloat(cleaned) || 0;
     setProduct({ ...product, price: `$${num.toFixed(2)}` });
     setPriceModalVisible(false);
+  };
+
+  const openNameModal = () => {
+    setNameInput(product.name === 'Unknown Product' ? '' : product.name);
+    setNameModalVisible(true);
+  };
+
+  const saveName = () => {
+    const trimmed = nameInput.trim();
+    if (trimmed) setProduct({ ...product, name: trimmed });
+    setNameModalVisible(false);
   };
 
   const nutritionMetrics = [
@@ -82,10 +95,15 @@ export default function ProductAnalysisScreen({ navigation, route }) {
 
         {/* Hero card */}
         <View style={styles.heroCard}>
-          <View style={styles.heroLeft}>
-            <Text style={styles.productName}>{product.name}</Text>
+          <Pressable style={styles.heroLeft} onPress={openNameModal}>
+            <View style={styles.nameRow}>
+              <Text style={styles.productName} numberOfLines={2}>
+                {product.name}
+              </Text>
+              <Ionicons name="pencil" size={13} color={colors.primary} style={{ marginLeft: 6 }} />
+            </View>
             <Text style={styles.productCategory}>{product.category}</Text>
-          </View>
+          </Pressable>
           <Pressable style={styles.priceWrapper} onPress={openPriceModal}>
             <Text style={styles.productPrice}>{product.price}</Text>
             <Ionicons name="pencil" size={12} color={colors.primary} style={{ marginLeft: 4 }} />
@@ -192,6 +210,45 @@ export default function ProductAnalysisScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
+      {/* Name input modal */}
+      <Modal
+        visible={nameModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNameModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit product name</Text>
+            <Text style={styles.modalSubtitle}>
+              Update the name if the database returned an incorrect or missing one.
+            </Text>
+            <TextInput
+              style={styles.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="e.g. Coca Cola 330ml"
+              placeholderTextColor={colors.placeholder}
+              autoFocus
+            />
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setNameModalVisible(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={saveName}
+              >
+                <Text style={styles.modalButtonSaveText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Price input modal */}
       <Modal
         visible={priceModalVisible}
@@ -296,6 +353,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 5,
+  },
+  nameInput: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 20,
+  },
 
   // Price modal
   modalOverlay: {
@@ -380,7 +455,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 20,
     fontWeight: '800',
-    marginBottom: 5,
+    flexShrink: 1,
   },
   productCategory: {
     color: colors.textSecondary,

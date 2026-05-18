@@ -12,8 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MOCK_RECENT_SCANS } from '../data/mockData';
-import { scanBarcodeImage } from '../api/api';
+import { scanBarcodeImage, lookupBarcode } from '../api/api';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 const recentScans = MOCK_RECENT_SCANS;
 
@@ -39,11 +42,40 @@ function mapProduct(p) {
 }
 
 export default function ScanProductScreen({ navigation }) {
-  const [searchText, setSearchText] = useState('');
-  const [scanning, setScanning]     = useState(false);
+  const [searchText, setSearchText]   = useState('');
+  const [scanning, setScanning]       = useState(false);
+  const [scanned, setScanned]         = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+
+  // Reset scanned flag whenever the screen comes into focus
+  // (so when user navigates back from ProductAnalysis, scanning resumes)
+  useFocusEffect(
+    useCallback(() => {
+      setScanned(false);
+    }, [])
+  );
 
   const openAnalysis = (product) => {
     navigation.navigate('ProductAnalysis', { product });
+  };
+
+  // Called automatically when the live camera detects a barcode
+  const handleBarcodeScanned = async ({ data }) => {
+    if (scanned || scanning) return;
+    setScanned(true);
+    setScanning(true);
+    try {
+      const response = await lookupBarcode(data);
+      openAnalysis(mapProduct(response.data));
+    } catch (error) {
+      const message = error.response?.data?.message ||
+        'Could not find this product. Try again.';
+      Alert.alert('Scan failed', message, [
+        { text: 'OK', onPress: () => setScanned(false) },
+      ]);
+    } finally {
+      setScanning(false);
+    }
   };
 
   // Uploads an image to the backend scanner and opens the analysis screen
@@ -108,19 +140,41 @@ export default function ScanProductScreen({ navigation }) {
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* Viewfinder */}
+        {/* Live camera viewfinder */}
         <View style={styles.viewfinderWrapper}>
           <View style={styles.viewfinder}>
-            {/* Green corner brackets */}
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
+            {permission?.granted ? (
+              <CameraView
+                style={styles.cameraView}
+                facing="back"
+                barcodeScannerSettings={{
+                  barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'],
+                }}
+                onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+              />
+            ) : (
+              <Pressable
+                style={styles.permissionBox}
+                onPress={requestPermission}
+              >
+                <Ionicons name="camera-outline" size={28} color={colors.primary} />
+                <Text style={styles.permissionTitle}>Camera access needed</Text>
+                <Text style={styles.permissionSubtitle}>Tap to allow scanning</Text>
+              </Pressable>
+            )}
 
-            {/* Scan line */}
-            <View style={styles.scanLine} />
-
-            <Text style={styles.viewfinderHint}>Position barcode in frame</Text>
+            {/* Green corner brackets overlay */}
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <View style={[styles.corner, styles.cornerTL]} />
+              <View style={[styles.corner, styles.cornerTR]} />
+              <View style={[styles.corner, styles.cornerBL]} />
+              <View style={[styles.corner, styles.cornerBR]} />
+              <View style={styles.scanHintOverlay}>
+                <Text style={styles.viewfinderHint}>
+                  {scanning ? 'Looking up product...' : 'Point at a barcode'}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -257,12 +311,41 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   viewfinder: {
-    height: 210,
+    height: 260,
     backgroundColor: '#0a0f0c',
     borderRadius: 14,
     position: 'relative',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cameraView: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  permissionBox: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 20,
+  },
+  permissionTitle: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  permissionSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+  scanHintOverlay: {
+    position: 'absolute',
+    bottom: 14,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
 
   // Corner brackets
@@ -312,11 +395,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   viewfinderHint: {
-    position: 'absolute',
-    bottom: 14,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    overflow: 'hidden',
   },
 
   // Flash / Scan / Gallery
