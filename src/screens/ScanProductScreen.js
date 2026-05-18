@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Alert,
   Pressable,
@@ -47,10 +47,13 @@ export default function ScanProductScreen({ navigation }) {
   const [scanned, setScanned]         = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
-  // Reset scanned flag whenever the screen comes into focus
-  // (so when user navigates back from ProductAnalysis, scanning resumes)
+  // Synchronous lock to prevent multiple callbacks firing before state updates
+  const scanLockRef = useRef(false);
+
+  // Reset scan lock whenever the screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      scanLockRef.current = false;
       setScanned(false);
     }, [])
   );
@@ -61,7 +64,10 @@ export default function ScanProductScreen({ navigation }) {
 
   // Called automatically when the live camera detects a barcode
   const handleBarcodeScanned = async ({ data }) => {
-    if (scanned || scanning) return;
+    // Synchronous guard — blocks duplicate fires from the camera
+    if (scanLockRef.current) return;
+    scanLockRef.current = true;
+
     setScanned(true);
     setScanning(true);
     try {
@@ -71,7 +77,13 @@ export default function ScanProductScreen({ navigation }) {
       const message = error.response?.data?.message ||
         'Could not find this product. Try again.';
       Alert.alert('Scan failed', message, [
-        { text: 'OK', onPress: () => setScanned(false) },
+        {
+          text: 'OK',
+          onPress: () => {
+            scanLockRef.current = false;
+            setScanned(false);
+          },
+        },
       ]);
     } finally {
       setScanning(false);
