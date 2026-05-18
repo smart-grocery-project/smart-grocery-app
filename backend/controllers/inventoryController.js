@@ -47,33 +47,23 @@ export const getInventory = async (req, res) => {
 // ADD item to inventory
 export const addItem = async (req, res) => {
   try {
-    console.log("[ADD ITEM] 1. hit:", { userId: req.user?.userId, body: req.body });
     const userId = req.user.userId;
     const { product, quantity } = req.body;
 
-    console.log("[ADD ITEM] 2. finding inventory...");
     const inventory = await Inventory.findOne({ user: userId });
-    console.log("[ADD ITEM] 3. found inventory:", !!inventory);
-
     if (!inventory) {
-      console.log("[ADD ITEM] no inventory — returning 404");
       return res.status(404).json({ message: "Inventory not found" });
     }
 
-    console.log("[ADD ITEM] 4. pushing item...");
     inventory.items.push({
       product,
       quantity,
       expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    console.log("[ADD ITEM] 5. saving...");
     await inventory.save();
-
-    console.log("[ADD ITEM] 6. success");
     res.status(200).json(inventory);
   } catch (error) {
-    console.log("[ADD ITEM] error:", error.message, error.stack);
     res.status(500).json({ message: error.message });
   }
 };

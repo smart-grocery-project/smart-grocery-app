@@ -24,6 +24,16 @@ function deriveCategory(nutrition) {
   return protein >= carbs ? 'Protein' : 'Carbs';
 }
 
+// Formats any date string to "May 25, 2026"
+function formatDate(input) {
+  if (!input) return '';
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return input;
+  return date.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
 // Maps a backend inventory item to the format the screen expects
 function mapItem(item) {
   return {
@@ -227,7 +237,7 @@ export default function InventoryScreen({ navigation }) {
                 <Text style={styles.itemMeta}>
                   {item.quantity} · {item.category}
                 </Text>
-                <Text style={styles.itemExpiry}>Expires: {item.expiryDate}</Text>
+                <Text style={styles.itemExpiry}>Expires: {formatDate(item.expiryDate)}</Text>
               </View>
               <View style={[styles.badge, { backgroundColor: item.badge.bg }]}>
                 <Text style={[styles.badgeText, { color: item.badge.color }]}>

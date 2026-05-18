@@ -34,7 +34,8 @@ export const loginUser = (email, password) =>
   api.post('/users/login', { email, password });
 
 // ─── Inventory ────────────────────────────────────────────────────────────────
-export const getInventory   = ()             => api.get('/inventory');
+export const getInventory    = ()             => api.get('/inventory');
+export const createInventory = ()             => api.post('/inventory');
 export const addInventoryItem = (product, quantity) =>
   api.post('/inventory/items', { product, quantity });
 export const removeInventoryItem = (itemId) =>
@@ -47,6 +48,7 @@ export const compareProduct = (id)           => api.post(`/products/${id}/compar
 
 // ─── History ──────────────────────────────────────────────────────────────────
 export const getHistory     = ()             => api.get('/history');
+export const createHistory  = ()             => api.post('/history');
 export const addHistoryItem = (productId)    =>
   api.post('/history/items', { productId });
 

@@ -14,6 +14,15 @@ const allItems = MOCK_INVENTORY.map((p) => ({
 }));
 
 // Returns days remaining + display info
+function formatDate(input) {
+  if (!input) return '';
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return input;
+  return date.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
 function getExpiry(expiryDateStr) {
   const expiry = new Date(expiryDateStr);
   const today  = new Date();
@@ -96,7 +105,7 @@ export default function ExpiryDatesScreen({ navigation }) {
                     <View style={styles.itemInfo}>
                       <Text style={styles.itemName}>{item.name}</Text>
                       <Text style={styles.itemDetail}>
-                        {item.detail} · Expired {item.expiryDate}
+                        {item.detail} · Expired {formatDate(item.expiryDate)}
                       </Text>
                       <Text style={styles.itemAgo}>{item.expiry.label}</Text>
                     </View>
@@ -132,7 +141,7 @@ export default function ExpiryDatesScreen({ navigation }) {
                     <View style={styles.itemInfo}>
                       <Text style={styles.itemName}>{item.name}</Text>
                       <Text style={styles.itemDetail}>
-                        {item.detail} · Expires {item.expiryDate}
+                        {item.detail} · Expires {formatDate(item.expiryDate)}
                       </Text>
                     </View>
                     <View
@@ -176,7 +185,7 @@ export default function ExpiryDatesScreen({ navigation }) {
                     <View style={styles.itemInfo}>
                       <Text style={styles.itemName}>{item.name}</Text>
                       <Text style={styles.itemDetail}>
-                        {item.detail} · Expires {item.expiryDate}
+                        {item.detail} · Expires {formatDate(item.expiryDate)}
                       </Text>
                     </View>
                     <View
