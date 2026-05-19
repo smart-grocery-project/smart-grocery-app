@@ -88,19 +88,7 @@ export default function LoginScreen({ navigation }) {
             </View>
 
             <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
-                <Pressable
-                  onPress={() =>
-                    Alert.alert(
-                      'Forgot password?',
-                      'Password reset will be available once the backend is connected.'
-                    )
-                  }
-                >
-                  <Text style={styles.forgotText}>Forgot password?</Text>
-                </Pressable>
-              </View>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={[styles.input, errors.password ? styles.inputError : null]}
                 placeholder="Enter your password"
@@ -120,32 +108,6 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.primaryButtonText}>
                 {loading ? 'Signing in...' : 'Sign in'}
               </Text>
-            </Pressable>
-
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google placeholder */}
-            <Pressable
-              style={styles.googleButton}
-              onPress={() =>
-                Alert.alert(
-                  'Continue with Google',
-                  'Google sign-in will be available once the backend is connected.'
-                )
-              }
-            >
-              <Ionicons
-                name="logo-google"
-                size={18}
-                color={colors.textPrimary}
-                style={styles.googleIcon}
-              />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </Pressable>
 
             <Pressable

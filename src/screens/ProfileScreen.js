@@ -257,20 +257,6 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </Pressable>
           <View style={styles.divider} />
-          <Pressable
-            style={styles.accountRow}
-            onPress={() =>
-              Alert.alert(
-                'Edit Profile',
-                'Profile editing will be available once the backend is connected.'
-              )
-            }
-          >
-            <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.accountRowText}>Edit profile</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-          </Pressable>
-          <View style={styles.divider} />
           <Pressable style={styles.accountRow} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={18} color="#ff6b6b" />
             <Text style={[styles.accountRowText, { color: '#ff6b6b' }]}>Sign out</Text>

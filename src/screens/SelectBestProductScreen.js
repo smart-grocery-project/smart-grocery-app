@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MOCK_BUDGET } from '../data/mockData';
-
-const WEEKLY_BUDGET_REMAINING = MOCK_BUDGET.remaining;
+import { getWeeklyPlan, getInventory } from '../api/api';
 
 // Strips units / $ and returns a number
 function parse(str) {
@@ -27,15 +26,15 @@ function buildRecommendation(product) {
 }
 
 // Generates "Why this product?" bullet points from the product's data
-function buildReasons(product) {
+function buildReasons(product, remainingBudget) {
   const reasons = [];
   const protein  = parse(product.protein);
   const price    = parse(product.price);
-  const budgetOk = price <= WEEKLY_BUDGET_REMAINING;
+  const budgetOk = price <= remainingBudget;
 
   if (protein >= 20) reasons.push('Highest protein per dollar');
   if (protein >= 10) reasons.push('Supports your protein-rich goal');
-  if (budgetOk)      reasons.push(`Fits your weekly $80 budget`);
+  if (budgetOk)      reasons.push('Fits your weekly budget');
   if (price < 6)     reasons.push('Best price among compared products');
   if (reasons.length < 3) reasons.push('Matches your current nutrition targets');
 
@@ -66,10 +65,31 @@ export default function SelectBestProductScreen({ navigation, route }) {
     statuses: ['Good choice', 'High protein', 'Within budget'],
   };
 
+  const [remainingBudget, setRemainingBudget] = useState(MOCK_BUDGET.remaining);
+
+  useEffect(() => {
+    const loadBudget = async () => {
+      try {
+        const [planRes, invRes] = await Promise.all([
+          getWeeklyPlan(),
+          getInventory(),
+        ]);
+        const total = planRes.data?.weeklyBudget || MOCK_BUDGET.total;
+        const items = invRes.data?.items || [];
+        const spent = items.reduce(
+          (sum, i) => sum + (i.product?.price || 0) * (i.quantity || 1),
+          0
+        );
+        setRemainingBudget(Math.max(0, total - spent));
+      } catch (_) {}
+    };
+    loadBudget();
+  }, []);
+
   const productPrice  = parse(product.price);
-  const budgetAfter   = WEEKLY_BUDGET_REMAINING - productPrice;
+  const budgetAfter   = remainingBudget - productPrice;
   const score         = computeScore(product);
-  const reasons       = buildReasons(product);
+  const reasons       = buildReasons(product, remainingBudget);
   const aiText        = buildRecommendation(product);
 
   const macros = [

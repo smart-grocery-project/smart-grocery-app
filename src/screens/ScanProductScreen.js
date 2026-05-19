@@ -5,14 +5,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MOCK_RECENT_SCANS } from '../data/mockData';
-import { scanBarcodeImage, lookupBarcode } from '../api/api';
+import { scanBarcodeImage, lookupBarcode, addHistoryItem, createHistory } from '../api/api';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,7 +41,6 @@ function mapProduct(p) {
 }
 
 export default function ScanProductScreen({ navigation }) {
-  const [searchText, setSearchText]   = useState('');
   const [scanning, setScanning]       = useState(false);
   const [scanned, setScanned]         = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
@@ -58,7 +56,23 @@ export default function ScanProductScreen({ navigation }) {
     }, [])
   );
 
+  // Records a scan in the user's history (creates history if needed)
+  const recordToHistory = async (productId) => {
+    if (!productId || String(productId).startsWith('p')) return;
+    try {
+      await addHistoryItem(productId);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        try {
+          await createHistory();
+          await addHistoryItem(productId);
+        } catch (_) {}
+      }
+    }
+  };
+
   const openAnalysis = (product) => {
+    recordToHistory(product.id);
     navigation.navigate('ProductAnalysis', { product });
   };
 
@@ -105,23 +119,7 @@ export default function ScanProductScreen({ navigation }) {
     }
   };
 
-  // Opens the camera, captures a photo, then uploads it
-  const handleScan = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Camera access', 'Please allow camera access to scan products.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-      base64: false,
-    });
-    if (!result.canceled && result.assets?.[0]) {
-      uploadAndScan(result.assets[0].uri);
-    }
-  };
-
-  // Picks an image from the gallery and uploads it
+  // Picks an image from the gallery and uploads it (fallback when live scan fails)
   const handleGallery = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
@@ -190,65 +188,17 @@ export default function ScanProductScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Flash / Scan / Gallery buttons */}
-        <View style={styles.actionRow}>
-          <Pressable
-            style={styles.actionBtn}
-            onPress={() =>
-              Alert.alert(
-                'Flash',
-                'Flash control will be available with real camera integration.'
-              )
-            }
-          >
-            <View style={styles.actionCircle}>
-              <Ionicons name="flash-outline" size={22} color={colors.textPrimary} />
-            </View>
-            <Text style={styles.actionLabel}>Flash</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.actionBtn}
-            onPress={handleScan}
-            disabled={scanning}
-          >
-            <View style={[styles.actionCircle, styles.actionCircleActive, scanning && { opacity: 0.6 }]}>
-              <Ionicons name="scan" size={26} color={colors.textOnPrimary} />
-            </View>
-            <Text style={[styles.actionLabel, styles.actionLabelActive]}>
-              {scanning ? 'Scanning...' : 'Scan'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.actionBtn}
-            onPress={handleGallery}
-            disabled={scanning}
-          >
-            <View style={styles.actionCircle}>
-              <Ionicons name="image-outline" size={22} color={colors.textPrimary} />
-            </View>
-            <Text style={styles.actionLabel}>Gallery</Text>
-          </Pressable>
-        </View>
-
-        {/* Manual search */}
-        <Text style={styles.orLabel}>OR SEARCH MANUALLY</Text>
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search-outline"
-            size={18}
-            color={colors.placeholder}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search product name..."
-            placeholderTextColor={colors.placeholder}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
+        {/* Photo upload fallback (for when live scanner can't read a barcode) */}
+        <Pressable
+          style={[styles.fallbackButton, scanning && { opacity: 0.6 }]}
+          onPress={handleGallery}
+          disabled={scanning}
+        >
+          <Ionicons name="image-outline" size={18} color={colors.primary} />
+          <Text style={styles.fallbackButtonText}>
+            Can't scan? Upload a photo of the barcode
+          </Text>
+        </Pressable>
 
         {/* Recently scanned */}
         <Text style={styles.sectionLabel}>RECENTLY SCANNED</Text>
@@ -415,6 +365,25 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 999,
     overflow: 'hidden',
+  },
+
+  // Photo upload fallback
+  fallbackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary + '60',
+    backgroundColor: colors.primary + '12',
+    marginBottom: 28,
+  },
+  fallbackButtonText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // Flash / Scan / Gallery

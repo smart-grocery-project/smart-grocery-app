@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import {
   MOCK_BUDGET,
@@ -56,21 +57,24 @@ export default function HomeScreen({ navigation }) {
   const [nutrition, setNutrition]     = useState(MOCK_NUTRITION_SUMMARY);
   const [expiring, setExpiring]       = useState(MOCK_EXPIRING_SOON);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Refresh whenever this screen comes into focus
+  // (so budget updates after adding/removing items in other tabs)
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
-    // Load weekly plan → budget + nutrition targets
+    let weeklyBudget    = MOCK_BUDGET.total;
+    let nutritionLoaded = false;
+
+    // Load weekly plan → total budget + nutrition targets
     try {
       const planRes = await getWeeklyPlan();
-      const plan = planRes.data;
+      const plan    = planRes.data;
       if (plan?.weeklyBudget) {
-        setBudget({
-          remaining: plan.weeklyBudget,
-          total:     plan.weeklyBudget,
-          period:    'Weekly',
-        });
+        weeklyBudget = plan.weeklyBudget;
       }
       if (plan?.nutritionTargets) {
         const t = plan.nutritionTargets;
@@ -79,41 +83,56 @@ export default function HomeScreen({ navigation }) {
           { label: 'Carbs',   value: `${t.carbs}g`,    color: '#f5a623' },
           { label: 'Fats',    value: `${t.fat}g`,      color: '#ff6b6b' },
         ]);
+        nutritionLoaded = true;
       }
     } catch (_) {
-      // Keep mock budget/nutrition
+      // No plan yet — fall back to defaults
     }
 
-    // Load inventory → find items expiring within 7 days
+    // Load inventory → calculate spent + expiring soon
+    let spent = 0;
     try {
       const invRes = await getInventory();
       const items  = invRes.data?.items || [];
-      const today  = new Date();
-      const soon   = items
+
+      // Calculate total spent: sum of (price × quantity) for every item
+      spent = items.reduce((sum, item) => {
+        const price = item.product?.price || 0;
+        const qty   = item.quantity       || 1;
+        return sum + price * qty;
+      }, 0);
+
+      const today = new Date();
+      const soon  = items
         .filter((item) => {
           const diff = Math.round(
             (new Date(item.expirationDate) - today) / (1000 * 60 * 60 * 24)
           );
           return diff >= 0 && diff <= 7;
         })
-        .map((item) => ({
-          id:     item._id,
-          name:   item.product?.name || 'Unknown',
-          meta:   `Qty: ${item.quantity}`,
-          label:  (() => {
-            const diff = Math.round(
-              (new Date(item.expirationDate) - today) / (1000 * 60 * 60 * 24)
-            );
-            return diff === 0 ? 'Today' : `${diff} day${diff === 1 ? '' : 's'}`;
-          })(),
-          urgent: Math.round(
+        .map((item) => {
+          const diff = Math.round(
             (new Date(item.expirationDate) - today) / (1000 * 60 * 60 * 24)
-          ) <= 1,
-        }));
-      if (soon.length > 0) setExpiring(soon);
+          );
+          return {
+            id:     item._id,
+            name:   item.product?.name || 'Unknown',
+            meta:   `Qty: ${item.quantity}`,
+            label:  diff === 0 ? 'Today' : `${diff} day${diff === 1 ? '' : 's'}`,
+            urgent: diff <= 1,
+          };
+        });
+      setExpiring(soon.length > 0 ? soon : MOCK_EXPIRING_SOON);
     } catch (_) {
-      // Keep mock expiring items
+      // Inventory empty or unavailable
     }
+
+    // Set the budget with the calculated remaining
+    setBudget({
+      remaining: Math.max(0, weeklyBudget - spent),
+      total:     weeklyBudget,
+      period:    'Weekly',
+    });
   };
 
   const budgetPercent = budget.remaining / budget.total;

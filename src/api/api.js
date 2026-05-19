@@ -36,14 +36,18 @@ export const loginUser = (email, password) =>
 // ─── Inventory ────────────────────────────────────────────────────────────────
 export const getInventory    = ()             => api.get('/inventory');
 export const createInventory = ()             => api.post('/inventory');
-export const addInventoryItem = (product, quantity) =>
-  api.post('/inventory/items', { product, quantity });
+export const addInventoryItem = (product, quantity, expirationDate) =>
+  api.post('/inventory/items', { product, quantity, expirationDate });
 export const removeInventoryItem = (itemId) =>
   api.delete(`/inventory/items/${itemId}`);
+export const updateInventoryItem = (itemId, quantity) =>
+  api.put(`/inventory/items/${itemId}`, { quantity });
 export const getExpiringItems = ()           => api.get('/inventory/items/expired');
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 export const getProducts    = ()             => api.get('/products');
+export const createProduct  = (data)         => api.post('/products', data);
+export const updateProduct  = (id, data)     => api.put(`/products/${id}`, data);
 export const compareProduct = (id)           => api.post(`/products/${id}/compare`);
 
 // ─── History ──────────────────────────────────────────────────────────────────
@@ -73,5 +77,20 @@ export const scanBarcodeImage = (imageUri) => {
 // Sends just a barcode number to the backend — used by the live barcode scanner.
 export const lookupBarcode = (barcode) =>
   api.post('/scanner/barcode', { barcode });
+
+// ─── AI ───────────────────────────────────────────────────────────────────────
+// Takes a photo of a nutrition label and uses Llama Vision to extract nutrition.
+export const scanNutritionLabel = (imageUri) => {
+  const formData = new FormData();
+  formData.append('image', {
+    uri:  imageUri,
+    type: 'image/jpeg',
+    name: 'label.jpg',
+  });
+  return api.post('/ai/scan-label', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000, // AI can take a few seconds
+  });
+};
 
 export default api;

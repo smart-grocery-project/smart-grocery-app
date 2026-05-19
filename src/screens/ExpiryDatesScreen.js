@@ -1,17 +1,33 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MOCK_INVENTORY } from '../data/mockData';
+import { getInventory, removeInventoryItem } from '../api/api';
 
-// Derived from the shared inventory — same source as InventoryScreen
-const allItems = MOCK_INVENTORY.map((p) => ({
+// Maps mock inventory items to the screen's format
+const mockItems = MOCK_INVENTORY.map((p) => ({
   id: p.id,
   name: p.name,
   detail: `${p.quantity} · ${p.category}`,
   expiryDate: p.expiryDate,
 }));
+
+// Maps a backend inventory item to the screen's format
+function mapItem(item) {
+  const product = item.product || {};
+  const category = (product.nutrition?.protein || 0) >= (product.nutrition?.carbs || 0)
+    ? 'Protein'
+    : 'Carbs';
+  return {
+    id:         item._id,
+    name:       product.name || 'Unknown',
+    detail:     `Qty: ${item.quantity} · ${category}`,
+    expiryDate: item.expirationDate,
+  };
+}
 
 // Returns days remaining + display info
 function formatDate(input) {
@@ -37,7 +53,30 @@ function getExpiry(expiryDateStr) {
 }
 
 export default function ExpiryDatesScreen({ navigation }) {
-  const enriched = allItems.map((item) => ({
+  const [items, setItems] = useState(mockItems);
+
+  // Refresh whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchItems();
+    }, [])
+  );
+
+  const fetchItems = async () => {
+    try {
+      const response = await getInventory();
+      const backend  = response.data?.items || [];
+      if (backend.length > 0) {
+        setItems(backend.map(mapItem));
+      } else {
+        setItems(mockItems);
+      }
+    } catch (_) {
+      setItems(mockItems);
+    }
+  };
+
+  const enriched = items.map((item) => ({
     ...item,
     expiry: getExpiry(item.expiryDate),
   }));
@@ -46,11 +85,34 @@ export default function ExpiryDatesScreen({ navigation }) {
   const soonItems    = enriched.filter((i) => i.expiry.group === 'soon');
   const goodItems    = enriched.filter((i) => i.expiry.group === 'good');
 
-  const handleRemove = (name) =>
+  const handleRemove = (item) => {
+    if (!item.id || String(item.id).startsWith('p')) {
+      Alert.alert(
+        'Demo item',
+        'This is a sample item — only items added through scanning or manual add can be removed.'
+      );
+      return;
+    }
     Alert.alert(
-      'Remove Item',
-      `Removing "${name}" will be available once the backend is connected.`
+      'Remove item',
+      `Are you sure you want to remove ${item.name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeInventoryItem(item.id);
+              await fetchItems();
+            } catch (_) {
+              Alert.alert('Error', 'Could not remove item. Try again.');
+            }
+          },
+        },
+      ]
     );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -111,7 +173,7 @@ export default function ExpiryDatesScreen({ navigation }) {
                     </View>
                     <Pressable
                       style={styles.removeButton}
-                      onPress={() => handleRemove(item.name)}
+                      onPress={() => handleRemove(item)}
                     >
                       <Text style={styles.removeText}>Remove</Text>
                     </Pressable>

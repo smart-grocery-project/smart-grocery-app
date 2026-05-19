@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Pressable,
@@ -13,9 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Alert } from 'react-native';
 import { colors } from '../theme/colors';
 import { MOCK_BUDGET, MOCK_PRODUCTS } from '../data/mockData';
-import { addInventoryItem, createInventory } from '../api/api';
+import { addInventoryItem, createInventory, getWeeklyPlan, getInventory, updateProduct } from '../api/api';
 
-const WEEKLY_BUDGET_REMAINING = MOCK_BUDGET.remaining;
 const fallbackProduct = MOCK_PRODUCTS.chickenBreast;
 
 // Returns a quality label + color based on nutrient type and amount
@@ -48,8 +47,32 @@ export default function ProductAnalysisScreen({ navigation, route }) {
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
+  // Real remaining budget = weekly budget - sum of all items in inventory
+  const [remainingBudget, setRemainingBudget] = useState(MOCK_BUDGET.remaining);
+
+  useEffect(() => {
+    const loadBudget = async () => {
+      try {
+        const [planRes, invRes] = await Promise.all([
+          getWeeklyPlan(),
+          getInventory(),
+        ]);
+        const total = planRes.data?.weeklyBudget || MOCK_BUDGET.total;
+        const items = invRes.data?.items || [];
+        const spent = items.reduce(
+          (sum, i) => sum + (i.product?.price || 0) * (i.quantity || 1),
+          0
+        );
+        setRemainingBudget(Math.max(0, total - spent));
+      } catch (_) {
+        // Keep default
+      }
+    };
+    loadBudget();
+  }, []);
+
   const productPrice  = parseFloat(product.price?.replace('$', '') || '0');
-  const afterPurchase = WEEKLY_BUDGET_REMAINING - productPrice;
+  const afterPurchase = remainingBudget - productPrice;
 
   const openPriceModal = () => {
     setPriceInput(productPrice ? String(productPrice) : '');
@@ -88,6 +111,17 @@ export default function ProductAnalysisScreen({ navigation, route }) {
 
     setAdding(true);
     try {
+      // First — persist any edits the user made to name or price
+      try {
+        await updateProduct(product.id, {
+          name:  product.name,
+          price: productPrice,
+        });
+      } catch (_) {
+        // If update fails, continue anyway — the user can still add the item
+      }
+
+      // Then add it to the inventory
       try {
         await addInventoryItem(product.id, 1);
       } catch (error) {
@@ -191,7 +225,7 @@ export default function ProductAnalysisScreen({ navigation, route }) {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Remaining budget</Text>
             <Text style={styles.infoValue}>
-              ${WEEKLY_BUDGET_REMAINING.toFixed(2)}
+              ${remainingBudget.toFixed(2)}
             </Text>
           </View>
           <View style={styles.infoDivider} />

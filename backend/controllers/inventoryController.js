@@ -48,7 +48,7 @@ export const getInventory = async (req, res) => {
 export const addItem = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { product, quantity } = req.body;
+    const { product, quantity, expirationDate } = req.body;
 
     const inventory = await Inventory.findOne({ user: userId });
     if (!inventory) {
@@ -58,7 +58,9 @@ export const addItem = async (req, res) => {
     inventory.items.push({
       product,
       quantity,
-      expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expirationDate: expirationDate
+        ? new Date(expirationDate)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
     await inventory.save();
