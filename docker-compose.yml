@@ -1,0 +1,15 @@
+services:
+  backend:
+    build: ./test-backend
+    ports:
+      - "5050:5000"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  frontend:
+    build: ./test-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
