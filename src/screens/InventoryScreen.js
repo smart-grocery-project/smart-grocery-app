@@ -15,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { MOCK_INVENTORY } from '../data/mockData';
 import {
   getInventory,
   createInventory,
@@ -83,7 +82,7 @@ function getStatus(expiryDateStr) {
 export default function InventoryScreen({ navigation }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchTerm, setSearchTerm]     = useState('');
-  const [items, setItems]               = useState(MOCK_INVENTORY);
+  const [items, setItems]               = useState([]);
   const [loading, setLoading]           = useState(true);
 
   // Manual add modal state
@@ -266,21 +265,15 @@ export default function InventoryScreen({ navigation }) {
     try {
       const response = await getInventory();
       const backendItems = response.data?.items || [];
-
-      if (backendItems.length > 0) {
-        // Real data exists — use it
-        setItems(backendItems.map(mapItem));
-      } else {
-        // Empty inventory — keep mock data for demo
-        setItems(MOCK_INVENTORY);
-      }
+      // Show only real inventory items (no demo fallback)
+      setItems(backendItems.map(mapItem));
     } catch (error) {
       if (error.response?.status === 404) {
-        // No inventory exists yet — create one then show mock data
+        // No inventory exists yet — create an empty one
         try { await createInventory(); } catch (_) {}
       }
-      // Fall back to mock data so demo always looks good
-      setItems(MOCK_INVENTORY);
+      // On error, show nothing rather than fake demo items
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -434,9 +427,13 @@ export default function InventoryScreen({ navigation }) {
               color={colors.textSecondary}
               style={{ marginBottom: 10 }}
             />
-            <Text style={styles.emptyTitle}>No items found</Text>
+            <Text style={styles.emptyTitle}>
+              {items.length === 0 ? 'Your inventory is empty' : 'No items found'}
+            </Text>
             <Text style={styles.emptyText}>
-              Try a different search or filter.
+              {items.length === 0
+                ? 'Tap the + button to scan or add your first item.'
+                : 'Try a different search or filter.'}
             </Text>
           </View>
         )}
