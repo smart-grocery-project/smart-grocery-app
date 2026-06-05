@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import {
   getInventory,
@@ -103,9 +104,13 @@ export default function InventoryScreen({ navigation }) {
   const [editQuantity, setEditQuantity]       = useState('1');
   const [editBusy, setEditBusy]               = useState(false);
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
+  // Refresh inventory every time the screen comes into focus
+  // (so newly scanned/added items appear immediately)
+  useFocusEffect(
+    useCallback(() => {
+      fetchInventory();
+    }, [])
+  );
 
   const resetForm = () => {
     setNewName('');
