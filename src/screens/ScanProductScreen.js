@@ -10,14 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { MOCK_RECENT_SCANS } from '../data/mockData';
-import { scanBarcodeImage, lookupBarcode, addHistoryItem, createHistory } from '../api/api';
+import { scanBarcodeImage, lookupBarcode, addHistoryItem, createHistory, getHistory } from '../api/api';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-
-const recentScans = MOCK_RECENT_SCANS;
 
 // Maps backend product to the format ProductAnalysisScreen expects
 function mapProduct(p) {
@@ -43,18 +40,45 @@ function mapProduct(p) {
 export default function ScanProductScreen({ navigation }) {
   const [scanning, setScanning]       = useState(false);
   const [scanned, setScanned]         = useState(false);
+  const [recentScans, setRecentScans] = useState([]);
   const [permission, requestPermission] = useCameraPermissions();
 
   // Synchronous lock to prevent multiple callbacks firing before state updates
   const scanLockRef = useRef(false);
 
-  // Reset scan lock whenever the screen comes into focus
+  // Reset scan lock + refresh recent scans whenever the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       scanLockRef.current = false;
       setScanned(false);
+      loadRecentScans();
     }, [])
   );
+
+  // Build the "Recently scanned" list from real scan history
+  const loadRecentScans = async () => {
+    try {
+      const res   = await getHistory();
+      const items = res.data?.items || [];
+      const recent = items
+        .filter((h) => h.product)          // skip entries with missing products
+        .slice(-5)                         // last 5 scans
+        .reverse()                         // most recent first
+        .map((h) => {
+          const product = mapProduct(h.product);
+          return {
+            id:       h._id,
+            name:     product.name,
+            subtitle: `${product.category} · ${product.calories}`,
+            product,
+          };
+        });
+      setRecentScans(recent);
+    } catch (_) {
+      // No history yet or request failed — show nothing
+      setRecentScans([]);
+    }
+  };
 
   // Records a scan in the user's history (creates history if needed)
   const recordToHistory = async (productId) => {
@@ -202,24 +226,32 @@ export default function ScanProductScreen({ navigation }) {
 
         {/* Recently scanned */}
         <Text style={styles.sectionLabel}>RECENTLY SCANNED</Text>
-        <View style={styles.recentList}>
-          {recentScans.map((item, index) => (
-            <Pressable
-              key={item.id}
-              style={[
-                styles.recentCard,
-                index < recentScans.length - 1 && styles.recentCardBorder,
-              ]}
-              onPress={() => openAnalysis(item.product)}
-            >
-              <View style={styles.recentInfo}>
-                <Text style={styles.recentName}>{item.name}</Text>
-                <Text style={styles.recentMacros}>{item.subtitle}</Text>
-              </View>
-              <Text style={styles.recentPrice}>{item.product.price}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {recentScans.length > 0 ? (
+          <View style={styles.recentList}>
+            {recentScans.map((item, index) => (
+              <Pressable
+                key={item.id}
+                style={[
+                  styles.recentCard,
+                  index < recentScans.length - 1 && styles.recentCardBorder,
+                ]}
+                onPress={() => openAnalysis(item.product)}
+              >
+                <View style={styles.recentInfo}>
+                  <Text style={styles.recentName}>{item.name}</Text>
+                  <Text style={styles.recentMacros}>{item.subtitle}</Text>
+                </View>
+                <Text style={styles.recentPrice}>{item.product.price}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.recentEmpty}>
+            <Text style={styles.recentEmptyText}>
+              No scans yet — scan a product to see it here.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -463,6 +495,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+  },
+  recentEmpty: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 22,
+    alignItems: 'center',
+  },
+  recentEmptyText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
   },
   recentCard: {
     flexDirection: 'row',

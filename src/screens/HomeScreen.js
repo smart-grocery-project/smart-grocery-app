@@ -7,7 +7,6 @@ import { colors } from '../theme/colors';
 import {
   MOCK_BUDGET,
   MOCK_NUTRITION_SUMMARY,
-  MOCK_EXPIRING_SOON,
 } from '../data/mockData';
 import { getWeeklyPlan, getInventory } from '../api/api';
 import { useAuth } from '../context/AuthContext';
@@ -55,7 +54,7 @@ export default function HomeScreen({ navigation }) {
 
   const [budget, setBudget]           = useState(MOCK_BUDGET);
   const [nutrition, setNutrition]     = useState(MOCK_NUTRITION_SUMMARY);
-  const [expiring, setExpiring]       = useState(MOCK_EXPIRING_SOON);
+  const [expiring, setExpiring]       = useState([]);
 
   // Refresh whenever this screen comes into focus
   // (so budget updates after adding/removing items in other tabs)
@@ -122,7 +121,7 @@ export default function HomeScreen({ navigation }) {
             urgent: diff <= 1,
           };
         });
-      setExpiring(soon.length > 0 ? soon : MOCK_EXPIRING_SOON);
+      setExpiring(soon);
     } catch (_) {
       // Inventory empty or unavailable
     }
@@ -202,29 +201,37 @@ export default function HomeScreen({ navigation }) {
 
         {/* Expiring soon */}
         <Text style={styles.sectionLabel}>EXPIRING SOON</Text>
-        {expiring.map((item) => (
-          <View key={item.id} style={styles.expiryCard}>
-            <View style={styles.expiryInfo}>
-              <Text style={styles.expiryName}>{item.name}</Text>
-              <Text style={styles.expiryMeta}>{item.meta}</Text>
-            </View>
-            <View
-              style={[
-                styles.expiryBadge,
-                item.urgent ? styles.badgeUrgent : styles.badgeWarning,
-              ]}
-            >
-              <Text
+        {expiring.length > 0 ? (
+          expiring.map((item) => (
+            <View key={item.id} style={styles.expiryCard}>
+              <View style={styles.expiryInfo}>
+                <Text style={styles.expiryName}>{item.name}</Text>
+                <Text style={styles.expiryMeta}>{item.meta}</Text>
+              </View>
+              <View
                 style={[
-                  styles.expiryBadgeText,
-                  item.urgent ? styles.badgeTextUrgent : styles.badgeTextWarning,
+                  styles.expiryBadge,
+                  item.urgent ? styles.badgeUrgent : styles.badgeWarning,
                 ]}
               >
-                {item.label}
-              </Text>
+                <Text
+                  style={[
+                    styles.expiryBadgeText,
+                    item.urgent ? styles.badgeTextUrgent : styles.badgeTextWarning,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </View>
             </View>
+          ))
+        ) : (
+          <View style={styles.expiryEmptyCard}>
+            <Text style={styles.expiryEmptyText}>
+              Nothing expiring soon.
+            </Text>
           </View>
-        ))}
+        )}
 
         {/* Sign out moved to Profile tab */}
       </ScrollView>
@@ -385,6 +392,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  expiryEmptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    alignItems: 'center',
+  },
+  expiryEmptyText: {
+    color: colors.textSecondary,
+    fontSize: 13,
   },
   expiryInfo: {
     flex: 1,
