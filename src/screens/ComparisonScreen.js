@@ -1,18 +1,39 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { MOCK_PRODUCTS } from '../data/mockData';
+import { getProducts } from '../api/api';
 
 const TABS = ['Protein', 'Carbs', 'Price'];
 
-// Comparison product pulled from shared mock data
-const COMPARISON_PRODUCT = MOCK_PRODUCTS.turkeyBreast;
-
 // Strips units and $ signs and returns a number
 function parse(str) {
-  return parseFloat(str?.replace(/[^0-9.]/g, '') || '0');
+  return parseFloat(String(str ?? '').replace(/[^0-9.]/g, '') || '0');
+}
+
+// Maps a raw backend product to the display shape used by the cards
+function mapDbProduct(p) {
+  const n = p.nutrition || {};
+  return {
+    id:       p._id,
+    name:     p.name || 'Unknown product',
+    store:    (n.protein || 0) >= (n.carbs || 0) ? 'Protein' : 'Carbs',
+    price:    `$${(p.price || 0).toFixed(2)}`,
+    protein:  `${n.protein || 0}g`,
+    carbs:    `${n.carbs || 0}g`,
+    fats:     `${n.fat || 0}g`,
+    calories: `${n.calories || 0} kcal`,
+    category: (n.protein || 0) >= (n.carbs || 0) ? 'Protein' : 'Carbs',
+  };
 }
 
 // Returns index (0 or 1) of the winning product for the active tab
@@ -68,35 +89,55 @@ function ProductCard({ product, isBest, activeTab, onSelect }) {
         })}
       </View>
 
-      <View style={styles.selectHint}>
-        <Text style={styles.selectHintText}>Tap to select</Text>
-      </View>
+      {onSelect && (
+        <View style={styles.selectHint}>
+          <Text style={styles.selectHintText}>Tap to select</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
 
 export default function ComparisonScreen({ navigation, route }) {
-  const [activeTab, setActiveTab] = useState('Protein');
+  const [activeTab, setActiveTab]       = useState('Protein');
+  const [allProducts, setAllProducts]   = useState([]);
+  const [compareWith, setCompareWith]   = useState(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [loading, setLoading]           = useState(true);
 
-  // The product we came from (scanned product)
+  // The product we came from (scanned product), already in display shape
   const scannedProduct = route.params?.product || {
-    name: 'Chicken breast 500g',
-    store: 'FreshFarm',
-    price: '$5.99',
-    protein: '110g',
+    id: 'scanned',
+    name: 'Scanned product',
+    store: '',
+    price: '$0.00',
+    protein: '0g',
     carbs: '0g',
-    fats: '6g',
-    calories: '165 kcal',
-    expiryDate: 'May 24, 2026',
-    category: 'Protein',
-    recommendation:
-      'Highest protein per dollar — fits your weekly $80 budget.',
-    statuses: ['Good choice', 'High protein', 'Within budget'],
+    fats: '0g',
+    calories: '0 kcal',
+    category: 'Other',
   };
 
-  const products = [scannedProduct, COMPARISON_PRODUCT];
-  const winnerIndex = getWinnerIndex(products[0], products[1], activeTab);
-  const winner = products[winnerIndex];
+  // Load real products to choose from
+  useEffect(() => {
+    (async () => {
+      try {
+        const res  = await getProducts();
+        const list = (res.data || [])
+          .map(mapDbProduct)
+          // don't offer the scanned product as its own comparison
+          .filter((p) => String(p.id) !== String(scannedProduct.id));
+        setAllProducts(list);
+      } catch (_) {
+        setAllProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const products     = compareWith ? [scannedProduct, compareWith] : [scannedProduct];
+  const winnerIndex  = compareWith ? getWinnerIndex(products[0], products[1], activeTab) : 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -113,56 +154,126 @@ export default function ComparisonScreen({ navigation, route }) {
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* Comparison tabs */}
-        <View style={styles.tabRow}>
-          {TABS.map((tab) => (
+        {/* Comparison tabs — only meaningful once a second product is chosen */}
+        {compareWith && (
+          <View style={styles.tabRow}>
+            {TABS.map((tab) => (
+              <Pressable
+                key={tab}
+                style={[styles.tab, activeTab === tab && styles.tabActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {/* Scanned product card */}
+        <ProductCard
+          product={scannedProduct}
+          isBest={compareWith ? winnerIndex === 0 : false}
+          activeTab={activeTab}
+          onSelect={compareWith ? () => navigation.navigate('SelectBestProduct', { product: scannedProduct }) : null}
+        />
+
+        {/* Second product: either the chosen one, or a "choose" prompt */}
+        {compareWith ? (
+          <ProductCard
+            product={compareWith}
+            isBest={winnerIndex === 1}
+            activeTab={activeTab}
+            onSelect={() => navigation.navigate('SelectBestProduct', { product: compareWith })}
+          />
+        ) : (
+          <Pressable style={styles.choosePrompt} onPress={() => setPickerVisible(true)}>
+            <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+            <Text style={styles.choosePromptText}>Choose a product to compare with</Text>
+          </Pressable>
+        )}
+
+        {/* Change selection / hint */}
+        {compareWith && (
+          <>
+            <Pressable style={styles.changeButton} onPress={() => setPickerVisible(true)}>
+              <Ionicons name="swap-horizontal" size={16} color={colors.primary} />
+              <Text style={styles.changeButtonText}>Compare with a different product</Text>
+            </Pressable>
+
+            <View style={styles.hintRow}>
+              <Ionicons name="information-circle-outline" size={15} color={colors.textSecondary} />
+              <Text style={styles.hintText}>
+                Winner based on{' '}
+                <Text style={styles.hintBold}>
+                  {activeTab === 'Price' ? 'lowest price' : activeTab === 'Carbs' ? 'lowest carbs' : 'highest protein'}
+                </Text>
+                . Switch tabs to compare differently.
+              </Text>
+            </View>
+
             <Pressable
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => setActiveTab(tab)}
+              style={styles.selectButton}
+              onPress={() =>
+                navigation.navigate('SelectBestProduct', { product: products[winnerIndex] })
+              }
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab}
+              <Text style={styles.selectButtonText}>
+                Select {products[winnerIndex].name.split(' ').slice(0, 2).join(' ')}
               </Text>
             </Pressable>
-          ))}
-        </View>
-
-        {/* Product cards */}
-        {products.map((product, index) => (
-          <ProductCard
-            key={index}
-            product={product}
-            isBest={winnerIndex === index}
-            activeTab={activeTab}
-            onSelect={() => navigation.navigate('SelectBestProduct', { product })}
-          />
-        ))}
-
-        {/* Winner hint */}
-        <View style={styles.hintRow}>
-          <Ionicons name="information-circle-outline" size={15} color={colors.textSecondary} />
-          <Text style={styles.hintText}>
-            Winner based on{' '}
-            <Text style={styles.hintBold}>
-              {activeTab === 'Price' ? 'lowest price' : activeTab === 'Carbs' ? 'lowest carbs' : 'highest protein'}
-            </Text>
-            . Switch tabs to compare differently.
-          </Text>
-        </View>
-
-        {/* Select button */}
-        <Pressable
-          style={styles.selectButton}
-          onPress={() =>
-            navigation.navigate('SelectBestProduct', { product: winner })
-          }
-        >
-          <Text style={styles.selectButtonText}>
-            Select {winner.name.split(' ').slice(0, 2).join(' ')}
-          </Text>
-        </Pressable>
+          </>
+        )}
       </ScrollView>
+
+      {/* Product picker modal */}
+      <Modal
+        visible={pickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerCard}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Choose a product</Text>
+              <Pressable onPress={() => setPickerVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 30 }} />
+            ) : allProducts.length === 0 ? (
+              <Text style={styles.pickerEmpty}>
+                No other products to compare with yet. Scan a few products first.
+              </Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+                {allProducts.map((p) => (
+                  <Pressable
+                    key={p.id}
+                    style={styles.pickerItem}
+                    onPress={() => {
+                      setCompareWith(p);
+                      setPickerVisible(false);
+                    }}
+                  >
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={styles.pickerItemName}>{p.name}</Text>
+                      <Text style={styles.pickerItemMeta}>
+                        P {p.protein} · C {p.carbs} · F {p.fats}
+                      </Text>
+                    </View>
+                    <Text style={styles.pickerItemPrice}>{p.price}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -341,6 +452,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Choose prompt (when no second product yet)
+  choosePrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.primary + '12',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: colors.primary + '50',
+    borderStyle: 'dashed',
+    paddingVertical: 26,
+    marginBottom: 14,
+  },
+  choosePromptText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Change selection button
+  changeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    marginBottom: 20,
+  },
+  changeButtonText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
   // Hint
   hintRow: {
     flexDirection: 'row',
@@ -371,5 +521,64 @@ const styles = StyleSheet.create({
     color: colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '700',
+  },
+
+  // Picker modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  pickerCard: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    paddingBottom: 30,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  pickerTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  pickerEmpty: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 30,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    marginBottom: 10,
+  },
+  pickerItemName: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  pickerItemMeta: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+  pickerItemPrice: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '800',
   },
 });
