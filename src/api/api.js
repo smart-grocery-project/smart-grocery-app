@@ -14,7 +14,9 @@ export const BASE_URL = 'https://smart-grocery-app-f00u.onrender.com';
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
+  // Render's free tier sleeps after inactivity and takes ~50s to wake.
+  // 60s lets the first request through instead of timing out.
+  timeout: 60000,
 });
 
 // Attach token to every request if available
@@ -89,7 +91,7 @@ export const scanNutritionLabel = (imageUri) => {
   });
   return api.post('/ai/scan-label', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 30000, // AI can take a few seconds
+    timeout: 90000, // AI processing + possible cold-start wake (~50s)
   });
 };
 
