@@ -8,8 +8,8 @@
 
 import axios from 'axios';
 
-// Your laptop's local IP — backend must be running on port 3000
-export const BASE_URL = 'http://192.168.100.4:3000';
+// Deployed backend on Render (cloud) — works anywhere, no laptop needed
+export const BASE_URL = 'https://smart-grocery-app-f00u.onrender.com';
 
 const api = axios.create({
   baseURL: BASE_URL,
