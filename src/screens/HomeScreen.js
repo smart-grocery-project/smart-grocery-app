@@ -4,11 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/colors';
-import {
-  MOCK_BUDGET,
-  MOCK_NUTRITION_SUMMARY,
-} from '../data/mockData';
 import { getWeeklyPlan, getInventory } from '../api/api';
+
+// Neutral defaults shown until real data loads
+const DEFAULT_BUDGET    = { remaining: 0, total: 0, period: 'Weekly' };
+const DEFAULT_NUTRITION = [
+  { label: 'Protein', value: '0g', color: '#4a9eff' },
+  { label: 'Carbs',   value: '0g', color: '#f5a623' },
+  { label: 'Fats',    value: '0g', color: '#ff6b6b' },
+];
 import { useAuth } from '../context/AuthContext';
 
 // Quick action tiles
@@ -52,8 +56,8 @@ export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const userName = user?.name || 'Smart Shopper';
 
-  const [budget, setBudget]           = useState(MOCK_BUDGET);
-  const [nutrition, setNutrition]     = useState(MOCK_NUTRITION_SUMMARY);
+  const [budget, setBudget]           = useState(DEFAULT_BUDGET);
+  const [nutrition, setNutrition]     = useState(DEFAULT_NUTRITION);
   const [expiring, setExpiring]       = useState([]);
 
   // Refresh whenever this screen comes into focus
@@ -65,8 +69,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   const loadData = async () => {
-    let weeklyBudget    = MOCK_BUDGET.total;
-    let nutritionLoaded = false;
+    let weeklyBudget = 0;
 
     // Load weekly plan → total budget + nutrition targets
     try {
@@ -82,10 +85,9 @@ export default function HomeScreen({ navigation }) {
           { label: 'Carbs',   value: `${t.carbs}g`,    color: '#f5a623' },
           { label: 'Fats',    value: `${t.fat}g`,      color: '#ff6b6b' },
         ]);
-        nutritionLoaded = true;
       }
     } catch (_) {
-      // No plan yet — fall back to defaults
+      // No plan yet — keep default nutrition values
     }
 
     // Load inventory → calculate spent + expiring soon
@@ -134,7 +136,7 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  const budgetPercent = budget.remaining / budget.total;
+  const budgetPercent = budget.total > 0 ? budget.remaining / budget.total : 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>

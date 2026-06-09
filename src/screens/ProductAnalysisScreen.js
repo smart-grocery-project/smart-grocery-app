@@ -12,10 +12,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert } from 'react-native';
 import { colors } from '../theme/colors';
-import { MOCK_BUDGET, MOCK_PRODUCTS } from '../data/mockData';
 import { addInventoryItem, createInventory, getWeeklyPlan, getInventory, updateProduct } from '../api/api';
 
-const fallbackProduct = MOCK_PRODUCTS.chickenBreast;
+// Neutral default if the screen is somehow opened without a product
+const fallbackProduct = {
+  id: 'unknown',
+  name: 'Product',
+  store: '',
+  price: '$0.00',
+  protein: '0g',
+  carbs: '0g',
+  fats: '0g',
+  calories: '0 kcal',
+  category: 'Other',
+};
 
 // Returns a quality label + color based on nutrient type and amount
 function getNutritionQuality(label, valueStr) {
@@ -48,7 +58,7 @@ export default function ProductAnalysisScreen({ navigation, route }) {
   const [nameInput, setNameInput] = useState('');
 
   // Real remaining budget = weekly budget - sum of all items in inventory
-  const [remainingBudget, setRemainingBudget] = useState(MOCK_BUDGET.remaining);
+  const [remainingBudget, setRemainingBudget] = useState(0);
 
   useEffect(() => {
     const loadBudget = async () => {
@@ -57,7 +67,7 @@ export default function ProductAnalysisScreen({ navigation, route }) {
           getWeeklyPlan(),
           getInventory(),
         ]);
-        const total = planRes.data?.weeklyBudget || MOCK_BUDGET.total;
+        const total = planRes.data?.weeklyBudget || 0;
         const items = invRes.data?.items || [];
         const spent = items.reduce(
           (sum, i) => sum + (i.product?.price || 0) * (i.quantity || 1),

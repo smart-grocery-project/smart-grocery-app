@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/colors';
-import { MOCK_HISTORY } from '../data/mockData';
 import { getHistory, createHistory } from '../api/api';
 
 const filters = ['All', 'Added', 'Scanned', 'Recommended'];
@@ -46,25 +46,26 @@ const actionStyles = {
 
 export default function HistoryScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
-  const [records, setRecords]           = useState(MOCK_HISTORY);
+  const [records, setRecords]           = useState([]);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  // Refresh on focus so newly scanned items show up
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+    }, [])
+  );
 
   const fetchHistory = async () => {
     try {
       const response = await getHistory();
       const items    = response.data?.items || [];
-      if (items.length > 0) {
-        setRecords(items.map(mapHistoryItem));
-      }
-      // If empty keep mock data so demo looks good
+      // Show only real history (most recent first); no demo fallback
+      setRecords(items.map(mapHistoryItem).reverse());
     } catch (error) {
       if (error.response?.status === 404) {
         try { await createHistory(); } catch (_) {}
       }
-      // Keep mock data on any error
+      setRecords([]);
     }
   };
 
@@ -130,29 +131,36 @@ export default function HistoryScreen() {
           <Text style={styles.recordCount}>{filteredRecords.length} shown</Text>
         </View>
 
-        {filteredRecords.map((record) => {
-          const badgeStyle = actionStyles[record.actionType];
+        {filteredRecords.length > 0 ? (
+          filteredRecords.map((record) => {
+            const badgeStyle = actionStyles[record.actionType];
 
-          return (
-            <View key={record.id} style={styles.recordCard}>
-              <View style={styles.recordTopRow}>
-                <View style={styles.recordDetails}>
-                  <Text style={styles.productName}>{record.productName}</Text>
-                  <Text style={styles.categoryText}>{record.category}</Text>
+            return (
+              <View key={record.id} style={styles.recordCard}>
+                <View style={styles.recordTopRow}>
+                  <View style={styles.recordDetails}>
+                    <Text style={styles.productName}>{record.productName}</Text>
+                    <Text style={styles.categoryText}>{record.category}</Text>
+                  </View>
+
+                  <View style={[styles.actionBadge, { backgroundColor: badgeStyle.badge }]}>
+                    <Text style={[styles.actionText, { color: badgeStyle.text }]}>
+                      {record.actionType}
+                    </Text>
+                  </View>
                 </View>
 
-                <View style={[styles.actionBadge, { backgroundColor: badgeStyle.badge }]}>
-                  <Text style={[styles.actionText, { color: badgeStyle.text }]}>
-                    {record.actionType}
-                  </Text>
-                </View>
+                <Text style={styles.noteText}>{record.note}</Text>
+                <Text style={styles.dateText}>{record.date}</Text>
               </View>
-
-              <Text style={styles.noteText}>{record.note}</Text>
-              <Text style={styles.dateText}>{record.date}</Text>
-            </View>
-          );
-        })}
+            );
+          })
+        ) : (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No activity yet</Text>
+            <Text style={styles.emptyText}>Scan a product and it will show up here.</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -310,5 +318,24 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '700',
+  },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

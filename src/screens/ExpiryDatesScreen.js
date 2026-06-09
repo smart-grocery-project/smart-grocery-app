@@ -4,16 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { MOCK_INVENTORY } from '../data/mockData';
 import { getInventory, removeInventoryItem } from '../api/api';
-
-// Maps mock inventory items to the screen's format
-const mockItems = MOCK_INVENTORY.map((p) => ({
-  id: p.id,
-  name: p.name,
-  detail: `${p.quantity} · ${p.category}`,
-  expiryDate: p.expiryDate,
-}));
 
 // Maps a backend inventory item to the screen's format
 function mapItem(item) {
@@ -53,7 +44,7 @@ function getExpiry(expiryDateStr) {
 }
 
 export default function ExpiryDatesScreen({ navigation }) {
-  const [items, setItems] = useState(mockItems);
+  const [items, setItems] = useState([]);
 
   // Refresh whenever the screen comes into focus
   useFocusEffect(
@@ -66,13 +57,10 @@ export default function ExpiryDatesScreen({ navigation }) {
     try {
       const response = await getInventory();
       const backend  = response.data?.items || [];
-      if (backend.length > 0) {
-        setItems(backend.map(mapItem));
-      } else {
-        setItems(mockItems);
-      }
+      // Show only real inventory items (no demo fallback)
+      setItems(backend.map(mapItem));
     } catch (_) {
-      setItems(mockItems);
+      setItems([]);
     }
   };
 
@@ -228,6 +216,15 @@ export default function ExpiryDatesScreen({ navigation }) {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* EMPTY state — no items at all */}
+        {enriched.length === 0 && (
+          <View style={styles.emptyCard}>
+            <Ionicons name="cube-outline" size={32} color={colors.textSecondary} style={{ marginBottom: 10 }} />
+            <Text style={styles.emptyTitle}>No items yet</Text>
+            <Text style={styles.emptyText}>Add items to your inventory to track expiry dates.</Text>
           </View>
         )}
 
@@ -445,5 +442,24 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '800',
+  },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

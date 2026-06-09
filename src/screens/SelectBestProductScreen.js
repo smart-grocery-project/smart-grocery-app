@@ -3,7 +3,6 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { MOCK_BUDGET } from '../data/mockData';
 import { getWeeklyPlan, getInventory } from '../api/api';
 
 // Strips units / $ and returns a number
@@ -52,20 +51,20 @@ function computeScore(product) {
 
 export default function SelectBestProductScreen({ navigation, route }) {
   const product = route.params?.product || {
-    name: 'Chicken breast 500g',
-    store: 'FreshFarm',
-    price: '$5.99',
-    protein: '110g',
+    name: 'Product',
+    store: '',
+    price: '$0.00',
+    protein: '0g',
     carbs: '0g',
-    fats: '6g',
-    calories: '165 kcal',
-    expiryDate: 'May 24, 2026',
-    category: 'Protein',
-    recommendation: 'Highest protein per dollar — fits your weekly $80 budget.',
-    statuses: ['Good choice', 'High protein', 'Within budget'],
+    fats: '0g',
+    calories: '0 kcal',
+    expiryDate: '',
+    category: 'Other',
+    recommendation: '',
+    statuses: [],
   };
 
-  const [remainingBudget, setRemainingBudget] = useState(MOCK_BUDGET.remaining);
+  const [remainingBudget, setRemainingBudget] = useState(0);
 
   useEffect(() => {
     const loadBudget = async () => {
@@ -74,7 +73,7 @@ export default function SelectBestProductScreen({ navigation, route }) {
           getWeeklyPlan(),
           getInventory(),
         ]);
-        const total = planRes.data?.weeklyBudget || MOCK_BUDGET.total;
+        const total = planRes.data?.weeklyBudget || 0;
         const items = invRes.data?.items || [];
         const spent = items.reduce(
           (sum, i) => sum + (i.product?.price || 0) * (i.quantity || 1),
