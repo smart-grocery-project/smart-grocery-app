@@ -33,11 +33,6 @@ export const getInventory = async (req, res) => {
       return res.status(404).json({ message: "Inventory not found" });
     }
 
-    // const inventoryObj = inventory.toObject();
-    // delete inventoryObj._id;
-    // inventoryObj.items = inventoryObj.items.map(({ _id, ...rest }) => rest);
-
-    // res.status(200).json(inventoryObj);
     res.status(200).json(inventory);
   } catch (error) {
     res.status(500).json({ message: error.message });

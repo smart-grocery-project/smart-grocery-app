@@ -69,11 +69,6 @@ export const getUsers = async (req, res) => {
   try {
     const users = await User.find();
 
-    // const safeUsers = users.map((user) => {
-    //   const { password: _, ...rest } = user._doc;
-    //   return rest;
-    // });
-
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
