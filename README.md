@@ -1,30 +1,31 @@
 # Smart Grocery Mobile App
 
-This folder contains the real mobile frontend for the Smart Grocery senior project.
+## 📌 Branch Purpose
 
-## Tech stack
+This branch contains a fully dockerized version of the Smart Grocery application, including:
 
-- Expo
-- React Native
-- JavaScript
-- React Navigation
+- 🧠 Node.js + Express backend
+- 🍃 MongoDB database (Docker container)
+- 📱 Expo React Native frontend (Web mode)
+- 🔗 Fully containerized communication between services
 
-## Screens
+The goal of this branch is to provide a **reproducible environment** that can be run on any machine with Docker installed, without manual setup or external dependencies.
 
-- Login
-- Register
-- Home
 
-## Main folders
+## ▶️ How to Run the Project
 
-- `src/navigation` for the app navigator
-- `src/screens` for each screen
-- `src/theme` for shared colors
-- `src/utils` for validation logic
+### Step 0 — Install Docker
 
-## Run the app
+Ensure Docker Desktop is installed and running.
 
-1. Open a terminal in this folder.
-2. Run `npm install`.
-3. Run `npx expo start`.
-4. Scan the QR code with Expo Go on Android, or press `a` in the terminal to open an Android emulator.
+### Step 1 — Start the system
+
+Open the project folder and run:
+
+```bash
+docker compose up --build
+```
+
+### Step 2 — Open via browser
+
+After successful startup, open http://localhost:8081 via browser.
