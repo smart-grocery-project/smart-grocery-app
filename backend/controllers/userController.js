@@ -35,8 +35,9 @@ export const createUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
+    console.log("BODY:", req.body); // ADD THIS
     const { email, password } = req.body;
-
+    console.log("BODY:", req.body); // ADD THIS
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
@@ -68,11 +69,6 @@ export const loginUser = async (req, res) => {
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find();
-
-    // const safeUsers = users.map((user) => {
-    //   const { password: _, ...rest } = user._doc;
-    //   return rest;
-    // });
 
     res.status(200).json(users);
   } catch (error) {

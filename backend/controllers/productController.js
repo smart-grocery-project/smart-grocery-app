@@ -34,6 +34,35 @@ export const createProduct = async (req, res) => {
   }
 };
 
+// UPDATE product (used to set price/name after scan or edit)
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, nutrition } = req.body;
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (typeof name  === "string") product.name  = name;
+    if (typeof price === "number") product.price = price;
+    if (nutrition && typeof nutrition === "object") {
+      product.nutrition = {
+        calories: nutrition.calories ?? product.nutrition.calories,
+        protein:  nutrition.protein  ?? product.nutrition.protein,
+        carbs:    nutrition.carbs    ?? product.nutrition.carbs,
+        fat:      nutrition.fat      ?? product.nutrition.fat,
+      };
+    }
+
+    await product.save();
+    res.status(200).json(product);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // GET all products
 export const getProducts = async (req, res) => {
   try {

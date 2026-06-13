@@ -1,52 +1,30 @@
-# Smart Grocery App
+# Smart Grocery Mobile App
 
-Backend API for the Smart Grocery application.  
+This folder contains the real mobile frontend for the Smart Grocery senior project.
 
----
+## Tech stack
 
-# Tech Stack
+- Expo
+- React Native
+- JavaScript
+- React Navigation
 
-- Node.js
-- Express.js
-- MongoDB + Mongoose
-- JWT Authentication
-- bcrypt (password hashing)
-- multer (file uploads)
-- Quagga2 (barcode scanning)
-- External API: Open Food Facts
+## Screens
 
----
+- Login
+- Register
+- Home
 
-# Prerequisites
+## Main folders
 
-Before running the project, make sure you have:
+- `src/navigation` for the app navigator
+- `src/screens` for each screen
+- `src/theme` for shared colors
+- `src/utils` for validation logic
 
-- Node.js
-- npm
-- MongoDB (local installation or MongoDB Atlas)
-- API testing tool (Postman recommended) for testing endpoints
+## Run the app
 
----
-
-# Installation
-
-## 1. Clone repository
-## 2. Create `.env` file in root directory
-
-```env
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-```
-
-## 3. Run the server
-
-```bash
-npm install
-npm run dev
-```
-
-## Server will run on
-
-```
-http://localhost:3000
-```
+1. Open a terminal in this folder.
+2. Run `npm install`.
+3. Run `npx expo start`.
+4. Scan the QR code with Expo Go on Android, or press `a` in the terminal to open an Android emulator.

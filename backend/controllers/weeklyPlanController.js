@@ -5,11 +5,6 @@ export const upsertWeeklyPlan = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // const userExists = await User.findById(userId);
-    // if (!userExists) {
-    //     return res.status(404).json({ message: "User not found" });
-    // }
-
     const { weeklyBudget, calories, protein, carbs, fat } = req.body;
 
     if (

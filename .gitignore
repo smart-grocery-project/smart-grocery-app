@@ -1,7 +1,5 @@
-node_modules/
-dist/
-
-.env
+node_modules
+dist
 .expo
 .vscode
-app.config.js
+.claude

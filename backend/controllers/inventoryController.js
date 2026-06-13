@@ -33,11 +33,6 @@ export const getInventory = async (req, res) => {
       return res.status(404).json({ message: "Inventory not found" });
     }
 
-    // const inventoryObj = inventory.toObject();
-    // delete inventoryObj._id;
-    // inventoryObj.items = inventoryObj.items.map(({ _id, ...rest }) => rest);
-
-    // res.status(200).json(inventoryObj);
     res.status(200).json(inventory);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -48,10 +43,9 @@ export const getInventory = async (req, res) => {
 export const addItem = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { product, quantity } = req.body;
+    const { product, quantity, expirationDate } = req.body;
 
     const inventory = await Inventory.findOne({ user: userId });
-
     if (!inventory) {
       return res.status(404).json({ message: "Inventory not found" });
     }
@@ -59,10 +53,12 @@ export const addItem = async (req, res) => {
     inventory.items.push({
       product,
       quantity,
+      expirationDate: expirationDate
+        ? new Date(expirationDate)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
     await inventory.save();
-
     res.status(200).json(inventory);
   } catch (error) {
     res.status(500).json({ message: error.message });
