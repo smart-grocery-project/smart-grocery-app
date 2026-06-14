@@ -14,6 +14,18 @@
     ],
     "android": {
       "package": "com.smartgrocery.mobile"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3ca33055-16b3-4ea6-b474-cf41358d90d6"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3ca33055-16b3-4ea6-b474-cf41358d90d6"
+    },
+    "ios": {}
   }
 }
