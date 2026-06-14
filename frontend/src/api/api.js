@@ -35,6 +35,9 @@ export const registerUser  = (name, email, password) =>
 export const loginUser = (email, password) =>
   api.post('/users/login', { email, password });
 
+export const changePassword = (currentPassword, newPassword) =>
+  api.put('/users/password', { currentPassword, newPassword });
+
 // ─── Inventory ────────────────────────────────────────────────────────────────
 export const getInventory    = ()             => api.get('/inventory');
 export const createInventory = ()             => api.post('/inventory');

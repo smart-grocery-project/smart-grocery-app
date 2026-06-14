@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { getWeeklyPlan, saveWeeklyPlan } from '../api/api';
+import { getWeeklyPlan, saveWeeklyPlan, changePassword } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
 const BUDGET_PERIODS = ['Weekly', 'Bi-weekly', 'Monthly'];
@@ -62,6 +65,13 @@ export default function ProfileScreen({ navigation }) {
   const [saving, setSaving]             = useState(false);
   const { signOut } = useAuth();
 
+  // Change-password modal state
+  const [pwModalVisible, setPwModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwBusy, setPwBusy]                   = useState(false);
+
   const currentGoal = NUTRITION_GOALS.find((g) => g.key === selectedGoal);
 
   // Load saved plan from backend on mount
@@ -105,6 +115,41 @@ export default function ProfileScreen({ navigation }) {
   const handleSignOut = () => {
     signOut();
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  };
+
+  const openPwModal = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPwModalVisible(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      Alert.alert('Missing fields', 'Please fill in all password fields.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Too short', 'New password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Mismatch', 'New password and confirmation do not match.');
+      return;
+    }
+
+    setPwBusy(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPwModalVisible(false);
+      Alert.alert('Success', 'Your password has been updated.');
+    } catch (error) {
+      const message = error.response?.data?.message ||
+        'Could not change password. Please try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setPwBusy(false);
+    }
   };
 
   return (
@@ -257,6 +302,12 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </Pressable>
           <View style={styles.divider} />
+          <Pressable style={styles.accountRow} onPress={openPwModal}>
+            <Ionicons name="key-outline" size={18} color={colors.textSecondary} />
+            <Text style={styles.accountRowText}>Change password</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+          </Pressable>
+          <View style={styles.divider} />
           <Pressable style={styles.accountRow} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={18} color="#ff6b6b" />
             <Text style={[styles.accountRowText, { color: '#ff6b6b' }]}>Sign out</Text>
@@ -264,6 +315,75 @@ export default function ProfileScreen({ navigation }) {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Change password modal */}
+      <Modal
+        visible={pwModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPwModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Change password</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter your current password and choose a new one.
+            </Text>
+
+            <Text style={styles.fieldLabel}>Current password</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              placeholder="••••••"
+              placeholderTextColor={colors.placeholder}
+            />
+
+            <Text style={styles.fieldLabel}>New password</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              placeholder="At least 6 characters"
+              placeholderTextColor={colors.placeholder}
+            />
+
+            <Text style={styles.fieldLabel}>Confirm new password</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              placeholder="Re-enter new password"
+              placeholderTextColor={colors.placeholder}
+            />
+
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setPwModalVisible(false)}
+                disabled={pwBusy}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSave, pwBusy && { opacity: 0.7 }]}
+                onPress={handleChangePassword}
+                disabled={pwBusy}
+              >
+                <Text style={styles.modalButtonSaveText}>
+                  {pwBusy ? 'Saving...' : 'Update'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -491,5 +611,80 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  // Change password modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 22,
+  },
+  modalTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginBottom: 18,
+    lineHeight: 18,
+  },
+  fieldLabel: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  modalInput: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    color: colors.textPrimary,
+    fontSize: 15,
+    marginBottom: 14,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButtonCancelText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalButtonSave: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonSaveText: {
+    color: colors.textOnPrimary,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
