@@ -5,6 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.smartgrocery.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#2ecc71"
+      }
+    },
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#f4fbf4"
@@ -12,9 +20,6 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "android": {
-      "package": "com.smartgrocery.mobile"
-    },
     "extra": {
       "eas": {
         "projectId": "3ca33055-16b3-4ea6-b474-cf41358d90d6"
