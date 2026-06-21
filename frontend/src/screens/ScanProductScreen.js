@@ -55,24 +55,30 @@ export default function ScanProductScreen({ navigation }) {
     }, [])
   );
 
-  // Build the "Recently scanned" list from real scan history
+  // Build the "Recently scanned" list from real scan history.
+  // Each product appears only once (most recent), so repeated scans of the
+  // same item don't duplicate in the list.
   const loadRecentScans = async () => {
     try {
       const res   = await getHistory();
-      const items = res.data?.items || [];
-      const recent = items
-        .filter((h) => h.product)          // skip entries with missing products
-        .slice(-5)                         // last 5 scans
-        .reverse()                         // most recent first
-        .map((h) => {
-          const product = mapProduct(h.product);
-          return {
-            id:       h._id,
-            name:     product.name,
-            subtitle: `${product.category} · ${product.calories}`,
-            product,
-          };
+      const items = (res.data?.items || []).filter((h) => h.product);
+      const seen  = new Set();
+      const recent = [];
+      // walk from most recent to oldest, keeping each product only once
+      for (let i = items.length - 1; i >= 0; i--) {
+        const h   = items[i];
+        const key = h.product._id || h.product.name;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const product = mapProduct(h.product);
+        recent.push({
+          id:       h._id,
+          name:     product.name,
+          subtitle: `${product.category} · ${product.calories}`,
+          product,
         });
+        if (recent.length >= 5) break;
+      }
       setRecentScans(recent);
     } catch (_) {
       // No history yet or request failed — show nothing
@@ -95,8 +101,14 @@ export default function ScanProductScreen({ navigation }) {
     }
   };
 
+  // Used for a NEW scan — records the product in history
   const openAnalysis = (product) => {
     recordToHistory(product.id);
+    navigation.navigate('ProductAnalysis', { product });
+  };
+
+  // Used when opening a product from the recent list — does NOT record again
+  const viewProduct = (product) => {
     navigation.navigate('ProductAnalysis', { product });
   };
 
@@ -235,7 +247,7 @@ export default function ScanProductScreen({ navigation }) {
                   styles.recentCard,
                   index < recentScans.length - 1 && styles.recentCardBorder,
                 ]}
-                onPress={() => openAnalysis(item.product)}
+                onPress={() => viewProduct(item.product)}
               >
                 <View style={styles.recentInfo}>
                   <Text style={styles.recentName}>{item.name}</Text>
