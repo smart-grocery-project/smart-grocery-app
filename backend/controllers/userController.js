@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
+import { sendResetCodeEmail } from "../services/emailService.js";
 
 // CREATE USER
 export const createUser = async (req, res) => {
@@ -103,6 +104,71 @@ export const changePassword = async (req, res) => {
     await user.save();
 
     res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// FORGOT PASSWORD — emails a 6-digit reset code
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    // Always respond success (don't reveal whether the email exists)
+    if (user) {
+      const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+      user.resetCode = await bcrypt.hash(code, 10);
+      user.resetCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+      await user.save();
+
+      try {
+        await sendResetCodeEmail(user.email, code);
+      } catch (mailErr) {
+        return res.status(500).json({ message: "Could not send reset email. Try again later." });
+      }
+    }
+
+    res.status(200).json({ message: "If that email exists, a reset code has been sent." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// RESET PASSWORD — verifies the code and sets a new password
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: "Email, code, and new password are required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user || !user.resetCode || !user.resetCodeExpires) {
+      return res.status(400).json({ message: "Invalid or expired reset code" });
+    }
+    if (user.resetCodeExpires < new Date()) {
+      return res.status(400).json({ message: "Reset code has expired. Request a new one." });
+    }
+
+    const isMatch = await bcrypt.compare(code, user.resetCode);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid or expired reset code" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetCode = undefined;
+    user.resetCodeExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

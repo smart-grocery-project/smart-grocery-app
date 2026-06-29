@@ -38,6 +38,12 @@ export const loginUser = (email, password) =>
 export const changePassword = (currentPassword, newPassword) =>
   api.put('/users/password', { currentPassword, newPassword });
 
+export const forgotPassword = (email) =>
+  api.post('/users/forgot-password', { email });
+
+export const resetPassword = (email, code, newPassword) =>
+  api.post('/users/reset-password', { email, code, newPassword });
+
 // ─── Inventory ────────────────────────────────────────────────────────────────
 export const getInventory    = ()             => api.get('/inventory');
 export const createInventory = ()             => api.post('/inventory');

@@ -17,6 +17,7 @@ import LoginScreen from '../screens/LoginScreen';
 import ProductAnalysisScreen from '../screens/ProductAnalysisScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ScanProductScreen from '../screens/ScanProductScreen';
 import { colors } from '../theme/colors';
 
@@ -141,6 +142,7 @@ export default function AppNavigator() {
         >
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="MainTabs" component={MainTabs} />
         </Stack.Navigator>
       </NavigationContainer>
