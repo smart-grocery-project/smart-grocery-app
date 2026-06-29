@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/colors';
-import { getHistory, createHistory } from '../api/api';
+import { getHistory, createHistory, clearHistory } from '../api/api';
 
 const filters = ['All', 'Added', 'Scanned', 'Recommended'];
 
@@ -69,6 +69,28 @@ export default function HistoryScreen() {
     }
   };
 
+  const handleClearHistory = () => {
+    Alert.alert(
+      'Clear history',
+      'This will remove all scanned products from your history. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearHistory();
+              setRecords([]);
+            } catch (_) {
+              Alert.alert('Error', 'Could not clear history. Try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const filteredRecords = records.filter(
     (record) => activeFilter === 'All' || record.actionType === activeFilter
   );
@@ -128,7 +150,14 @@ export default function HistoryScreen() {
 
         <View style={styles.listHeader}>
           <Text style={styles.sectionTitle}>Recent activity</Text>
-          <Text style={styles.recordCount}>{filteredRecords.length} shown</Text>
+          <View style={styles.listHeaderRight}>
+            <Text style={styles.recordCount}>{filteredRecords.length} shown</Text>
+            {records.length > 0 && (
+              <Pressable onPress={handleClearHistory} hitSlop={8}>
+                <Text style={styles.clearText}>Clear</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {filteredRecords.length > 0 ? (
@@ -264,6 +293,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '700',
+  },
+  listHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  clearText: {
+    color: '#ff6b6b',
+    fontSize: 13,
+    fontWeight: '800',
   },
   recordCard: {
     backgroundColor: colors.surface,

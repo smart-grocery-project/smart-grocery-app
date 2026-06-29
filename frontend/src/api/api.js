@@ -60,6 +60,7 @@ export const getHistory     = ()             => api.get('/history');
 export const createHistory  = ()             => api.post('/history');
 export const addHistoryItem = (productId)    =>
   api.post('/history/items', { productId });
+export const clearHistory   = ()             => api.delete('/history/items');
 
 // ─── Weekly Plan ──────────────────────────────────────────────────────────────
 export const getWeeklyPlan  = ()             => api.get('/weekly-plan');

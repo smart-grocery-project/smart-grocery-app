@@ -108,9 +108,11 @@ export default function ProductAnalysisScreen({ navigation, route }) {
   };
 
   const [adding, setAdding] = useState(false);
+  const [expiryModalVisible, setExpiryModalVisible] = useState(false);
+  const [expiryDays, setExpiryDays] = useState('7');
 
-  const handleAddToInventory = async () => {
-    // Mock products (id starts with 'p') aren't in the real DB
+  // Opens the expiry picker (after checking it's a real product)
+  const openAddModal = () => {
     if (!product.id || String(product.id).startsWith('p')) {
       Alert.alert(
         'Demo product',
@@ -118,6 +120,15 @@ export default function ProductAnalysisScreen({ navigation, route }) {
       );
       return;
     }
+    setExpiryDays('7');
+    setExpiryModalVisible(true);
+  };
+
+  const handleAddToInventory = async () => {
+    setExpiryModalVisible(false);
+    // Convert the chosen days into an expiration date
+    const days = parseInt(expiryDays) || 7;
+    const expirationDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
     setAdding(true);
     try {
@@ -131,14 +142,14 @@ export default function ProductAnalysisScreen({ navigation, route }) {
         // If update fails, continue anyway — the user can still add the item
       }
 
-      // Then add it to the inventory
+      // Then add it to the inventory with the chosen expiry
       try {
-        await addInventoryItem(product.id, 1);
+        await addInventoryItem(product.id, 1, expirationDate);
       } catch (error) {
         // Inventory doesn't exist yet — create it then retry
         if (error.response?.status === 404) {
           await createInventory();
-          await addInventoryItem(product.id, 1);
+          await addInventoryItem(product.id, 1, expirationDate);
         } else {
           throw error;
         }
@@ -287,7 +298,7 @@ export default function ProductAnalysisScreen({ navigation, route }) {
 
           <Pressable
             style={[styles.addButton, adding && { opacity: 0.7 }]}
-            onPress={handleAddToInventory}
+            onPress={openAddModal}
             disabled={adding}
           >
             <Text style={styles.addButtonText}>
@@ -296,6 +307,63 @@ export default function ProductAnalysisScreen({ navigation, route }) {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Expiry picker modal */}
+      <Modal
+        visible={expiryModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExpiryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>When does it expire?</Text>
+            <Text style={styles.modalSubtitle}>
+              Choose how long until this item expires.
+            </Text>
+            <View style={styles.presetRow}>
+              {[
+                { label: '1 week',   days: '7' },
+                { label: '1 month',  days: '30' },
+                { label: '6 months', days: '180' },
+                { label: '1 year',   days: '365' },
+              ].map((p) => (
+                <Pressable
+                  key={p.days}
+                  style={[styles.presetChip, expiryDays === p.days && styles.presetChipActive]}
+                  onPress={() => setExpiryDays(p.days)}
+                >
+                  <Text style={[styles.presetText, expiryDays === p.days && styles.presetTextActive]}>
+                    {p.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={styles.nameInput}
+              value={expiryDays}
+              onChangeText={(v) => setExpiryDays(v.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="Or enter custom days"
+              placeholderTextColor={colors.placeholder}
+            />
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setExpiryModalVisible(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleAddToInventory}
+              >
+                <Text style={styles.modalButtonSaveText}>Add</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Name input modal */}
       <Modal
@@ -691,5 +759,31 @@ const styles = StyleSheet.create({
     color: colors.textOnPrimary,
     fontSize: 15,
     fontWeight: '700',
+  },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  presetChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  presetText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  presetTextActive: {
+    color: colors.textOnPrimary,
   },
 });

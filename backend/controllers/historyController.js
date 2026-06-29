@@ -62,3 +62,23 @@ export const getHistory = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Clear all items from the user's history
+export const clearHistory = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const history = await History.findOne({ user: userId });
+
+    if (!history) {
+      return res.status(404).json({ message: "History not found" });
+    }
+
+    history.items = [];
+    await history.save();
+
+    res.status(200).json(history);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

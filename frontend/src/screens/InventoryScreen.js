@@ -565,12 +565,30 @@ export default function InventoryScreen({ navigation }) {
               </View>
 
               <Text style={styles.fieldLabel}>Days until expiry</Text>
+              <View style={styles.presetRow}>
+                {[
+                  { label: '1 week',   days: '7' },
+                  { label: '1 month',  days: '30' },
+                  { label: '6 months', days: '180' },
+                  { label: '1 year',   days: '365' },
+                ].map((p) => (
+                  <Pressable
+                    key={p.days}
+                    style={[styles.presetChip, newExpiryDays === p.days && styles.presetChipActive]}
+                    onPress={() => setNewExpiryDays(p.days)}
+                  >
+                    <Text style={[styles.presetText, newExpiryDays === p.days && styles.presetTextActive]}>
+                      {p.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
               <TextInput
                 style={styles.modalInput}
                 value={newExpiryDays}
                 onChangeText={(v) => setNewExpiryDays(v.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                placeholder="7"
+                placeholder="Or enter custom days"
                 placeholderTextColor={colors.placeholder}
               />
 
@@ -935,6 +953,32 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 15,
     marginBottom: 14,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  presetChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  presetText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  presetTextActive: {
+    color: colors.textOnPrimary,
   },
   rowFields: {
     flexDirection: 'row',
