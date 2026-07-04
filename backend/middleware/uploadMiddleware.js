@@ -1,10 +1,17 @@
 import multer from "multer";
 import path from "path";
+import fs from "fs";
+
+const UPLOAD_DIR = "uploads/";
 
 // Storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    // Ensure the upload directory exists. It is excluded from the Docker image
+    // (.dockerignore), so on the deployed server it must be created at runtime;
+    // otherwise multer fails with ENOENT and the AI label scan returns 500.
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + path.extname(file.originalname);
